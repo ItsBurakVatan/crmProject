@@ -1,0 +1,181 @@
+.create-aday-cari-container {
+    background-color: #f4f6f8;
+    min-height: 100vh;
+    padding-top: 80px;
+}
+
+.form-container {
+    width: 90%;
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h2 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    font-weight: 600;
+    color: #34495e;
+    margin-bottom: 5px;
+}
+
+.input-group input,
+.input-group select,
+.input-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.input-group textarea {
+    height: 100px;
+    resize: vertical;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.save-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.save-btn:hover {
+    background-color: #219653;
+}
+
+.cancel-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.cancel-btn:hover {
+    background-color: #c0392b;
+}
+
+.popup {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    color: white;
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+.popup.success {
+    background-color: #27ae60;
+}
+
+.popup.error {
+    background-color: #e74c3c;
+}
+
+.complete-btn {
+    width: 20px;
+    height: 20px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    text-align: center;
+}
+
+.complete-btn.completed {
+    background: #28a745;
+    color: white;
+}
+
+.error {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+    .create-aday-cari-container {
+        padding-top: 60px;
+    }
+
+    .form-container {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .form-container h2 {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
+
+    .input-group {
+        margin-bottom: 15px;
+    }
+
+    .input-group label {
+        font-size: 14px;
+    }
+
+    .input-group input,
+    .input-group select,
+    .input-group textarea {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .input-group textarea {
+        height: 80px;
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .save-btn,
+    .cancel-btn {
+        width: 100%;
+        padding: 10px;
+    }
+
+    .popup {
+        top: 10px;
+        right: 10px;
+        width: 90%;
+        font-size: 14px;
+        padding: 10px 15px;
+    }
+
+    .complete-btn {
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+    }
+}

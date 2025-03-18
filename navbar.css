@@ -1,0 +1,161 @@
+.navContainer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #2c3e50;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    padding: 0 5%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 1000;
+    height: 60px;
+}
+
+.navLogo {
+    color: #ecf0f1;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+}
+
+.navbar ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+.navbar .dropdown {
+    position: relative;
+}
+
+.navbar .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #333;
+    color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    list-style: none;
+    min-width: 200px;
+}
+
+.navbar .dropdown-menu li a {
+    color: #fff;
+    text-decoration: none;
+    display: block;
+    padding: 5px 0;
+}
+
+.navbar .dropdown-menu.open {
+    display: block; /* Tıklama ile açılır */
+}
+
+
+.navbar .dropdown-menu li a:hover {
+    color: #ddd;
+}
+
+.navbar .dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.navbar ul li {
+    display: flex;
+    align-items: center;
+}
+
+.navbar ul li a, .navbar ul li span {
+    color: #ecf0f1;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 8px 12px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.navbar ul li a:hover, .navbar ul li span:hover {
+    background-color: #34495e;
+    border-radius: 5px;
+    color: #f1c40f;
+}
+
+.navbar ul li a.active {
+    background-color: #34495e;
+    color: #f1c40f;
+    border-radius: 5px;
+}
+
+#menu-bar {
+    display: none;
+}
+
+.icon {
+    color: #ecf0f1;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+    .navContainer {
+        height: 50px;
+        padding: 0 3%;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .navLogo {
+        font-size: 20px;
+        padding: 10px 0;
+    }
+
+    .navbar {
+        position: fixed;
+        top: 50px;
+        left: -100%;
+        width: 100%;
+        background-color: #2c3e50;
+        transition: left 0.3s ease;
+        padding: 10px 0;
+    }
+
+    #menu-bar:checked ~ .navbar {
+        left: 0;
+    }
+
+    .navbar ul {
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .navbar ul li {
+        width: 100%;
+        text-align: center;
+    }
+
+    .navbar ul li a, .navbar ul li span {
+        font-size: 14px;
+        padding: 10px;
+        display: block;
+    }
+
+    .navbar .dropdown-menu {
+        position: static;
+        width: 100%;
+        background-color: #444;
+        padding: 5px 0;
+    }
+
+    .navbar .dropdown:hover .dropdown-menu {
+        display: none; /* Mobil için hover yerine tıklama ile açılabilir */
+    }
+
+    .navbar .dropdown:active .dropdown-menu {
+        display: block; /* Tıklama ile açılır */
+    }
+}

@@ -1,0 +1,144 @@
+.status-page {
+    padding: 20px;
+    min-height: 100vh;
+    background-color: #f4f6f8;
+    padding-top: 80px;
+}
+
+.status-container {
+    display: flex;
+    justify-content: space-around;
+    max-width: 1200px;
+    margin: 0 auto;
+    gap: 20px;
+}
+
+.status-panel {
+    background-color: #34495e;
+    color: #f1c40f;
+    border-radius: 10px;
+    padding: 15px 20px;
+    width: 30%;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status-panel:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+}
+
+.status-panel h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.count {
+    display: inline-block;
+    background-color: #ecf0f1;
+    color: #34495e;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.loading {
+    text-align: center;
+    font-size: 18px;
+    color: #34495e;
+    padding: 20px;
+}
+
+.error {
+    text-align: center;
+    font-size: 18px;
+    color: #e74c3c;
+    padding: 20px;
+}
+
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.popup-content {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    text-align: center;
+}
+
+.popup-content input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+}
+
+.popup-content button {
+    margin: 0 10px;
+    padding: 5px 15px;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+    .status-page {
+        padding: 10px;
+        padding-top: 60px;
+    }
+
+    .status-container {
+        flex-direction: column;
+        width: 95%;
+        gap: 15px;
+    }
+
+    .status-panel {
+        width: 100%;
+        padding: 10px 15px;
+        margin-bottom: 10px;
+    }
+
+    .status-panel h3 {
+        font-size: 16px;
+    }
+
+    .count {
+        width: 25px;
+        height: 25px;
+        line-height: 25px;
+        font-size: 14px;
+    }
+
+    .loading,
+    .error {
+        font-size: 16px;
+        padding: 15px;
+    }
+
+    .popup-content {
+        width: 90%;
+        padding: 15px;
+    }
+
+    .popup-content button {
+        width: 100%;
+        margin: 5px 0;
+    }
+}

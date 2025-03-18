@@ -1,0 +1,334 @@
+.aday-cari-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 90%;
+    margin: 80px auto 20px;
+}
+
+.search-bar {
+    padding: 10px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.add-aday-cari-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-aday-cari-btn:hover {
+    background-color: #219653;
+}
+
+.aday-cari-container {
+    width: 90%;
+    margin: 0 auto;
+}
+
+.table-wrapper {
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+.table-wrapper::-webkit-scrollbar {
+    height: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.aday-cari-table {
+    width: 100%;
+    min-width: 1200px;
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    table-layout: auto;
+}
+
+.aday-cari-table th,
+.aday-cari-table td {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+    white-space: nowrap;
+    font-size: 14px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aday-cari-table th {
+    background-color: #ecf0f1;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.aday-cari-table tr:hover {
+    background-color: #f5f6fa;
+}
+
+/* Pop-up Overlay */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Pop-up Container */
+.popup-modern {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 350px;
+    max-width: 90%;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Başlık */
+.popup-title {
+    margin: 0 0 20px;
+    font-size: 1.5rem;
+    color: #333;
+    text-align: center;
+}
+
+/* Input Alanı */
+.popup-input {
+    width: 100%;
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #333;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.popup-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+/* Buton Container */
+.popup-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* Genel Buton Stili */
+.popup-btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Kaydet Butonu */
+.popup-btn-save {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.popup-btn-save:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+/* İptal Butonu */
+.popup-btn-cancel {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.popup-btn-cancel:hover {
+    background-color: #c82333;
+    transform: translateY(-2px);
+}
+
+/* Animasyon */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Bağlam Menüsü */
+.context-menu {
+    position: absolute;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    padding: 5px 0;
+    width: 150px;
+    z-index: 1001;
+}
+
+.context-menu-item {
+    padding: 8px 15px;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.context-menu-item:hover {
+    background-color: #f0f0f0;
+}
+
+.context-menu-item.delete {
+    color: #dc3545;
+}
+
+.context-menu-item.delete:hover {
+    background-color: #ffe6e6;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.pagination button {
+    padding: 8px 16px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+    .aday-cari-header {
+        flex-direction: column;
+        gap: 10px;
+        width: 95%;
+        margin: 60px auto 10px;
+    }
+
+    .search-bar {
+        width: 100%;
+    }
+
+    .add-aday-cari-btn {
+        width: 100%;
+        padding: 12px;
+    }
+
+    .aday-cari-container {
+        width: 95%;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    .aday-cari-table {
+        display: block;
+        min-width: unset;
+        width: 100%;
+    }
+
+    .aday-cari-table thead,
+    .aday-cari-table tbody,
+    .aday-cari-table tr,
+    .aday-cari-table th,
+    .aday-cari-table td {
+        display: block;
+    }
+
+    .aday-cari-table th {
+        display: none;
+    }
+
+    .aday-cari-table td {
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+        border: none;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .aday-cari-table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .popup-modern {
+        width: 90%;
+        padding: 15px;
+    }
+
+    .popup-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .context-menu {
+        width: 120px;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .pagination button {
+        width: 100%;
+    }
+}
