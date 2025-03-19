@@ -1,0 +1,207 @@
+:root {
+    --primary-color: #27ae60;
+    --primary-hover: #219653;
+    --danger-color: #e74c3c;
+    --danger-hover: #c82333;
+    --text-color: #34495e;
+    --background-light: #f4f6f8;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.user-management-container {
+    background-color: var(--background-light);
+    min-height: 100vh;
+    padding-top: 80px;
+}
+
+.user-management-content {
+    width: 90%;
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.user-management-content h2 {
+    text-align: center;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.table-wrapper {
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+.table-wrapper::-webkit-scrollbar {
+    height: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: var(--shadow);
+    border-radius: 8px;
+    table-layout: auto;
+}
+
+.user-table th,
+.user-table td {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    text-align: left;
+    font-size: 14px;
+}
+
+.user-table th {
+    background-color: #ecf0f1;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.user-table tr:hover {
+    background-color: #f5f6fa;
+}
+
+.user-table select {
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.user-table select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-color: var(--primary-color);
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.pagination button {
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.pagination button:hover {
+    background-color: var(--primary-hover);
+}
+
+.pagination button:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: var(--danger-color);
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+    .user-management-container {
+        padding-top: 60px;
+    }
+
+    .user-management-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .user-management-content h2 {
+        font-size: 22px;
+        margin-bottom: 15px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    .user-table {
+        display: block;
+        min-width: unset;
+        width: 100%;
+    }
+
+    .user-table thead,
+    .user-table tbody,
+    .user-table tr,
+    .user-table th,
+    .user-table td {
+        display: block;
+    }
+
+    .user-table th {
+        display: none;
+    }
+
+    .user-table td {
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+        border: none;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .user-table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .user-table select {
+        width: 100%;
+        padding: 8px;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .pagination button {
+        width: 100%;
+    }
+}
