@@ -1,3 +1,13 @@
+:root {
+    --primary-color: #27ae60;
+    --primary-hover: #219653;
+    --danger-color: #e74c3c;
+    --danger-hover: #c82333;
+    --text-color: #34495e;
+    --background-light: #f4f6f8;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 body, html {
     overflow-x: hidden;
     margin: 0;
@@ -9,13 +19,13 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, #2c3e50, #3498db);
+    background: linear-gradient(135deg, var(--text-color), #3498db);
 }
 
 .registerCard {
     background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow);
     width: 400px;
     padding: 40px;
 }
@@ -23,7 +33,7 @@ body, html {
 .center h1 {
     font-size: 24px;
     text-align: center;
-    color: #2c3e50;
+    color: var(--text-color);
     margin-bottom: 20px;
 }
 
@@ -42,7 +52,10 @@ form .txt_field {
 }
 
 .txt_field input:focus {
-    border-color: #3498db;
+    border-color: var(--primary-color);
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
 }
 
 .txt_field input::placeholder {
@@ -51,7 +64,7 @@ form .txt_field {
 
 .login_button {
     width: 100%;
-    background: #27ae60;
+    background: var(--primary-color);
     border: none;
     padding: 15px 20px;
     border-radius: 8px;
@@ -64,8 +77,13 @@ form .txt_field {
 }
 
 .login_button:hover {
-    background: #219653;
+    background: var(--primary-hover);
     transform: translateY(-2px);
+}
+
+.login_button:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 .login_button:disabled {
@@ -90,8 +108,13 @@ form .txt_field {
     text-decoration: underline;
 }
 
+.signup_link a:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .error-message {
-    color: #e74c3c;
+    color: var(--danger-color);
     font-size: 14px;
     text-align: center;
     margin-top: 10px;
