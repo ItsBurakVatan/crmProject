@@ -4,16 +4,21 @@ const adayCariSchema = new mongoose.Schema({
     sube: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
     adayKodu: { 
         type: Number, 
-        required: [true, "Aday kodu zorunlu!"], 
-        unique: true 
     },
-    chUnvani: { type: String, required: [true, "C/H Ünvanı zorunlu!"] },
+    chUnvani: { 
+        type: String, 
+        required: [true, "C/H Ünvanı zorunlu!"], 
+        minlength: [3, "C/H Ünvanı en az 3 karakter olmalı!"]
+    },
     adres: { type: String },
     ulke: { type: mongoose.Schema.Types.ObjectId, ref: "Country" },
     il: { type: mongoose.Schema.Types.ObjectId, ref: "City" },
     ilce: { type: mongoose.Schema.Types.ObjectId, ref: "Town" },
     sorumluPersonel: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
-    yetkiliAdiSoyadi: { type: String },
+    yetkiliAdiSoyadi: { 
+        type: String, 
+        minlength: [2, "Yetkili adı soyadı en az 2 karakter olmalı!"]
+    },
     yetkiliGorevi: { type: String },
     yetkiliEmail: { 
         type: String,
@@ -21,13 +26,23 @@ const adayCariSchema = new mongoose.Schema({
     },
     yetkiliTelefon: { type: String },
     vergiDairesi: { type: String },
-    vergiNo: { type: String, match: [/^\d{10}$/, "Vergi numarası 10 haneli olmalı!"] },
-    tcKimlikNo: { type: String, match: [/^\d{11}$/, "TC Kimlik No 11 haneli olmalı!"] },
+    vergiNo: { 
+        type: String, 
+        match: [/^\d{10}$/, "Vergi numarası 10 haneli olmalı!"]
+    },
+    tcKimlikNo: { 
+        type: String, 
+        match: [/^\d{11}$/, "TC Kimlik No 11 haneli olmalı!"]
+    },
     aciklama: { type: String },
     durumu: { type: mongoose.Schema.Types.ObjectId, ref: "Status" },
     cariHesapGrubu: { type: mongoose.Schema.Types.ObjectId, ref: "Group" },
     musteriHikayesi: { type: String },
-    company: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    company: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: "User", 
+        required: [true, "Şirket bilgisi zorunlu!"]
+    },
 }, { timestamps: true });
 
 export default mongoose.model("AdayCari", adayCariSchema, "adaycaris");
