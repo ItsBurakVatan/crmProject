@@ -1,5 +1,15 @@
+:root {
+    --primary-color: #27ae60;
+    --primary-hover: #219653;
+    --danger-color: #e74c3c;
+    --danger-hover: #c82333;
+    --text-color: #34495e;
+    --background-light: #f4f6f8;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .create-aday-cari-container {
-    background-color: #f4f6f8;
+    background-color: var(--background-light);
     min-height: 100vh;
     padding-top: 80px;
 }
@@ -11,12 +21,12 @@
     background-color: #fff;
     padding: 30px;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
 }
 
 .form-container h2 {
     text-align: center;
-    color: #2c3e50;
+    color: var(--text-color);
     margin-bottom: 20px;
 }
 
@@ -27,7 +37,7 @@
 .input-group label {
     display: block;
     font-weight: 600;
-    color: #34495e;
+    color: var(--text-color);
     margin-bottom: 5px;
 }
 
@@ -39,6 +49,15 @@
     border: 1px solid #ddd;
     border-radius: 5px;
     font-size: 16px;
+}
+
+.input-group input:focus,
+.input-group select:focus,
+.input-group textarea:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
 }
 
 .input-group textarea {
@@ -53,7 +72,7 @@
 }
 
 .save-btn {
-    background-color: #27ae60;
+    background-color: var(--primary-color);
     color: white;
     border: none;
     padding: 12px 20px;
@@ -63,11 +82,16 @@
 }
 
 .save-btn:hover {
-    background-color: #219653;
+    background-color: var(--primary-hover);
+}
+
+.save-btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 .cancel-btn {
-    background-color: #e74c3c;
+    background-color: var(--danger-color);
     color: white;
     border: none;
     padding: 12px 20px;
@@ -77,7 +101,12 @@
 }
 
 .cancel-btn:hover {
-    background-color: #c0392b;
+    background-color: var(--danger-hover);
+}
+
+.cancel-btn:focus {
+    outline: 2px solid var(--danger-color);
+    outline-offset: 2px;
 }
 
 .popup {
@@ -88,14 +117,35 @@
     color: white;
     border-radius: 5px;
     z-index: 1000;
+    max-width: 300px; /* Pop-up'ın maksimum genişliğini sınırlıyoruz */
+    width: auto; /* İçeriğe göre genişlik */
+    box-shadow: var(--shadow); /* Hafif gölge ekleyerek öne çıkmasını sağlıyoruz */
+    font-size: 16px;
+    text-align: center;
+    opacity: 0; /* Başlangıçta görünmez */
+    animation: fadeInOut 3s ease-in-out forwards; /* Açılıp kapanma animasyonu */
 }
 
+/* Başarı ve hata durumları için renkler */
 .popup.success {
-    background-color: #27ae60;
+    background-color: var(--primary-color);
 }
 
 .popup.error {
-    background-color: #e74c3c;
+    background-color: var(--danger-color);
+}
+
+/* Animasyon tanımı */
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translateY(-20px); }
+    10% { opacity: 1; transform: translateY(0); }
+    90% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-20px); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .complete-btn {
@@ -108,15 +158,44 @@
     text-align: center;
 }
 
+.complete-btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .complete-btn.completed {
-    background: #28a745;
+    background: var(--primary-color);
     color: white;
 }
 
+/* Textbox altındaki hata mesajları */
 .error {
-    color: red;
-    font-size: 0.9em;
-    margin-top: 5px;
+    color: var(--danger-color);
+    font-size: 0.85em; /* .general-error ile aynı (0.65em -> 0.85em) */
+    margin-top: 8px; /* .general-error ile aynı (2px -> 8px) */
+    display: block;
+    font-weight: 400; /* Zaten aynı */
+    background-color: #ffe6e6;
+    padding: 3px 6px; /* .general-error ile aynı (0px 2px -> 3px 6px) */
+    border-radius: 20px; /* .general-error ile aynı (2px -> 3px) */
+}
+
+.input-group input.error-border,
+.input-group select.error-border,
+.input-group textarea.error-border {
+    border-color: var(--danger-color);
+}
+
+/* Buton altındaki genel hata mesajı */
+.general-error {
+    color: var(--danger-color);
+    font-size: 0.85em; 
+    margin-top: 8px; 
+    text-align: center;
+    font-weight: 400;
+    background-color: #ffe6e6;
+    padding: 3px 6px; 
+    border-radius: 20px; 
 }
 
 /* Mobil Uyumluluk */
@@ -168,7 +247,7 @@
     .popup {
         top: 10px;
         right: 10px;
-        width: 90%;
+        max-width: 90%; /* Mobilde ekranın tamamını kaplamasın */
         font-size: 14px;
         padding: 10px 15px;
     }
@@ -177,5 +256,17 @@
         width: 18px;
         height: 18px;
         font-size: 12px;
+    }
+
+    .error {
+        font-size: 0.75em;
+        margin-top: 6px; 
+        padding: 2px 4px; 
+    }
+
+    .general-error {
+        font-size: 0.75em; /* Mobilde daha da küçült (0.85em -> 0.75em) */
+        margin-top: 6px;
+        padding: 2px 4px;
     }
 }
