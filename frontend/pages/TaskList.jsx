@@ -1,47 +1,73 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "./Navbar";
-import api from "../api"; // axios yerine api import et
+import api from "../api";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../authContext";
+import useFetch from "../useFetch";
 import "../styles/adayCariKartlari.css";
 
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [showPopup, setShowPopup] = useState(false);
     const [editTask, setEditTask] = useState(null);
     const [contextMenu, setContextMenu] = useState(null);
-    const { user } = useContext(AuthContext);
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [options, setOptions] = useState({
+        receiptTypes: [],
+        priorities: [],
+        taskTypes: [],
+    });
     const navigate = useNavigate();
 
+    const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(`/tasks?page=${page}&limit=10`);
+
     useEffect(() => {
-        const fetchTasks = async () => {
-            setLoading(true);
+        if (data) {
+            setTasks(data.data || []);
+            setTotalPages(data.pages || 1);
+            setLoading(fetchLoading);
+            setError(fetchError ? fetchError.message : null);
+        } else if (fetchError) {
+            setError("Görevler yüklenemedi: " + (fetchError.message || "Yetkisiz erişim!"));
+        }
+    }, [data, fetchLoading, fetchError]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
             try {
-                const response = await api.get("/tasks"); // api ile token gönderilir
-                console.log("Tasks Response:", response.data); // Yanıtı kontrol et
-                setTasks(response.data);
+                const [receiptTypes, priorities, taskTypes] = await Promise.all([
+                    api.get("/tasks/receiptTypes"),
+                    api.get("/tasks/priorities"),
+                    api.get("/tasks/taskTypes"),
+                ]);
+                setOptions({
+                    receiptTypes: receiptTypes.data,
+                    priorities: priorities.data,
+                    taskTypes: taskTypes.data,
+                });
             } catch (error) {
-                console.error("Error fetching tasks:", error.response ? error.response.data : error.message);
+                setError("Combobox verileri yüklenemedi!");
             }
-            setLoading(false);
         };
-        fetchTasks();
+        fetchOptions();
     }, []);
 
     const handleSearch = async (e) => {
         setSearchQuery(e.target.value);
         if (e.target.value) {
             try {
-                const response = await api.get(`/tasks/search?query=${e.target.value}`);
-                setTasks(response.data);
+                const response = await api.get(`/tasks/search?query=${e.target.value}&page=${page}&limit=10`);
+                setTasks(response.data.data);
+                setTotalPages(response.data.pages);
+                setError(null);
             } catch (error) {
-                console.error("Error searching tasks:", error.response ? error.response.data : error.message);
+                setError(error.response?.data?.message || "Arama sırasında hata oluştu.");
             }
         } else {
-            const response = await api.get("/tasks");
-            setTasks(response.data);
+            reFetch();
         }
     };
 
@@ -52,8 +78,9 @@ const TaskList = () => {
             setTasks(tasks.map(task => task._id === editTask._id ? response.data : task));
             setEditTask(null);
             setShowPopup(false);
+            setError(null);
         } catch (error) {
-            console.error("Error editing task:", error.response ? error.response.data : error.message);
+            setError(error.response?.data?.message || "Görev düzenlenemedi.");
         }
     };
 
@@ -62,8 +89,9 @@ const TaskList = () => {
             await api.delete(`/tasks/${id}`);
             setTasks(tasks.filter(task => task._id !== id));
             setContextMenu(null);
+            setError(null);
         } catch (error) {
-            console.error("Error deleting task:", error.response ? error.response.data : error.message);
+            setError(error.response?.data?.message || "Görev silinemedi.");
         }
     };
 
@@ -90,6 +118,7 @@ const TaskList = () => {
                 </button>
             </div>
             <div className="aday-cari-container">
+                {error && <div className="error-message">{error}</div>}
                 <div className="table-wrapper">
                     <table className="aday-cari-table">
                         <thead>
@@ -134,6 +163,11 @@ const TaskList = () => {
                         </tbody>
                     </table>
                 </div>
+                <div className="pagination">
+                    <button onClick={() => setPage(page - 1)} disabled={page === 1}>Önceki</button>
+                    <span>Sayfa {page} / {totalPages}</span>
+                    <button onClick={() => setPage(page + 1)} disabled={page === totalPages}>Sonraki</button>
+                </div>
             </div>
 
             {showPopup && (
@@ -153,6 +187,33 @@ const TaskList = () => {
                         >
                             <option value="false">Tamamlanmadı</option>
                             <option value="true">Tamamlandı</option>
+                        </select>
+                        <select
+                            value={editTask?.receiptType?._id || ""}
+                            onChange={(e) => setEditTask({ ...editTask, receiptType: options.receiptTypes.find(rt => rt._id === e.target.value) })}
+                        >
+                            <option value="">Fiş Türü Seç</option>
+                            {options.receiptTypes.map((type) => (
+                                <option key={type._id} value={type._id}>{type.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={editTask?.priority?._id || ""}
+                            onChange={(e) => setEditTask({ ...editTask, priority: options.priorities.find(p => p._id === e.target.value) })}
+                        >
+                            <option value="">Öncelik Seç</option>
+                            {options.priorities.map((priority) => (
+                                <option key={priority._id} value={priority._id}>{priority.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={editTask?.taskType?._id || ""}
+                            onChange={(e) => setEditTask({ ...editTask, taskType: options.taskTypes.find(tt => tt._id === e.target.value) })}
+                        >
+                            <option value="">Görev Türü Seç</option>
+                            {options.taskTypes.map((type) => (
+                                <option key={type._id} value={type._id}>{type.name}</option>
+                            ))}
                         </select>
                         <div className="popup-buttons">
                             <button className="popup-btn popup-btn-save" onClick={handleEditTask}>
