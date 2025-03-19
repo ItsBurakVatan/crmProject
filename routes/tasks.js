@@ -1,68 +1,64 @@
 import express from "express";
 import { authorize } from "../middleware/auth.js";
-import { getTasks, createTask, updateTask, deleteTask, searchTasks } from "../controllers/tasks.js";
-import mongoose from "mongoose"; // Mongoose'u import ediyoruz, eğer dosyanın başında yoksa eklenmeli
+import { createTask, deleteTask, getTasks, searchTasks, updateTask } from "../controllers/tasks.js";
+import TaskType from "../models/TaskType.js";
+import Priority from "../models/Priority.js";
+import ReceiptType from "../models/ReceiptType.js";
+import User from "../models/User.js";
+import Group from "../models/Group.js";
 
 const router = express.Router();
 
-// Görevleri Listeleme
-router.get("/", authorize("admin", "manager", "staff"), getTasks);
-
-// Yeni Görev Oluşturma
-router.post("/", authorize("admin", "manager", "staff"), createTask);
-
-// Görev Güncelleme
-router.put("/:id", authorize("admin", "manager"), updateTask);
-
-// Görev Silme
-router.delete("/:id", authorize("admin"), deleteTask);
-
-// Görev Arama
-router.get("/search", authorize("admin", "manager", "staff"), searchTasks);
-
-// Ekstra Endpoint’ler (Tanımlamalar için)
 router.get("/taskTypes", async (req, res) => {
     try {
-        const taskTypes = await mongoose.connection.db.collection("taskTypes").find().toArray();
-        console.log("Task Types:", taskTypes); // Backend logu
+        const taskTypes = await TaskType.find();
         res.status(200).json(taskTypes);
     } catch (err) {
-        console.error("Error fetching taskTypes:", err); // Hata detayını logla
-        res.status(500).json({ message: "Task types alınamadı", error: err.message });
+        res.status(500).json({ message: "Görev türleri alınamadı", error: err.message });
     }
 });
 
 router.get("/priorities", async (req, res) => {
     try {
-        const priorities = await mongoose.connection.db.collection("priorities").find().toArray();
-        console.log("Priorities:", priorities);
+        const priorities = await Priority.find();
         res.status(200).json(priorities);
     } catch (err) {
-        console.error("Error fetching priorities:", err);
-        res.status(500).json({ message: "Priorities alınamadı", error: err.message });
+        res.status(500).json({ message: "Öncelikler alınamadı", error: err.message });
     }
 });
 
 router.get("/receiptTypes", async (req, res) => {
     try {
-        const receiptTypes = await mongoose.connection.db.collection("receiptTypes").find().toArray();
-        console.log("Receipt Types:", receiptTypes);
+        const receiptTypes = await ReceiptType.find();
         res.status(200).json(receiptTypes);
     } catch (err) {
-        console.error("Error fetching receiptTypes:", err);
-        res.status(500).json({ message: "Receipt types alınamadı", error: err.message });
+        res.status(500).json({ message: "Fiş türleri alınamadı", error: err.message });
     }
 });
 
 router.get("/users", async (req, res) => {
     try {
-        const users = await mongoose.connection.db.collection("users").find().toArray();
-        console.log("Users:", users);
+        const users = await User.find();
         res.status(200).json(users);
     } catch (err) {
-        console.error("Error fetching users:", err);
-        res.status(500).json({ message: "Users alınamadı", error: err.message });
+        res.status(500).json({ message: "Kullanıcılar alınamadı", error: err.message });
     }
 });
+
+router.get("/groups", async (req, res) => {
+    try {
+        const groups = await Group.find();
+        res.status(200).json(groups);
+    } catch (err) {
+        res.status(500).json({ message: "Gruplar alınamadı", error: err.message });
+    }
+});
+
+// Sayfalama parametreleri ile görev listeleme ve arama
+router.get("/", authorize("admin", "manager", "staff"), getTasks);
+router.get("/search", authorize("admin", "manager", "staff"), searchTasks);
+router.post("/", authorize("admin", "manager", "staff"), createTask);
+router.put("/:id", authorize("admin", "manager", "staff"), updateTask);
+router.delete("/:id", authorize("admin", "manager"), deleteTask);
 
 export default router;
