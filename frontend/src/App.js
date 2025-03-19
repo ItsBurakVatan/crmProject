@@ -12,6 +12,7 @@ import AdayCariStatusPage from "./pages/AdayCariStatusPage";
 import CustomerStatus from "./pages/CustomerStatus"; // Yeni eklenen sayfa
 import TaskTypes from "./pages/TaskTypes"; // Yeni eklenen sayfa
 import UserGroups from "./pages/UserGroups"; // Yeni eklenen sayfa
+import UserManagement from "./pages/UserManagement"; // Yeni eklenen sayfa
 
 function App() {
     const { user } = useContext(AuthContext);
@@ -34,7 +35,8 @@ function App() {
                 <Route path="/aday-cari-status" element={<ProtectedRoute><AdayCariStatusPage /></ProtectedRoute>} />
                 <Route path="/definitions/customer-status" element={<ProtectedRoute><CustomerStatus /></ProtectedRoute>} />
                 <Route path="/definitions/task-types" element={<ProtectedRoute><TaskTypes /></ProtectedRoute>} />
-                <Route path="/definitions/user-groups" element={<ProtectedRoute><UserGroups /></ProtectedRoute>} />z
+                <Route path="/definitions/user-groups" element={<ProtectedRoute><UserGroups /></ProtectedRoute>} />
+                <Route path="/user-management" element={<ProtectedRoute><UserManagement /></ProtectedRoute>} /> {/* Yeni rota */}
             </Routes>
         </BrowserRouter>
     );
