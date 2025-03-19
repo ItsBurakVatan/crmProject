@@ -1,107 +1,86 @@
-import React, { useState, useEffect, useContext } from "react";
-import Navbar from './Navbar';
-import api from "../api";
-import { AuthContext } from "../authContext";
-import "../styles/createAdayCari.css";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
+import Navbar from "./Navbar";
+import "../styles/createAdayCari.css";
 
 const CreateTask = () => {
-    const [info, setInfo] = useState({ taskNo: 1, completed: false });
-    const [popup, setPopup] = useState({ show: false, message: "", isError: false });
-    const [adayCaris, setAdayCaris] = useState([]);
-    const [taskTypes, setTaskTypes] = useState([]);
-    const [priorities, setPriorities] = useState([]);
-    const [receiptTypes, setReceiptTypes] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [groups, setGroups] = useState([]);
-    const { user } = useContext(AuthContext);
+    const [task, setTask] = useState({
+        adayCari: "",
+        taskDate: "",
+        taskEndDate: "",
+        receiptType: "",
+        priority: "",
+        taskType: "",
+        relatedUser: "",
+        relatedGroup: "",
+        description: "",
+        completed: false,
+    });
+    const [errors, setErrors] = useState({}); // Form doğrulama hataları için
+    const [options, setOptions] = useState({
+        adayCaris: [],
+        receiptTypes: [],
+        priorities: [],
+        taskTypes: [],
+        users: [],
+        groups: [],
+    });
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!user) {
-            console.log("Kullanıcı giriş yapmamış, yönlendiriliyor...");
-            navigate("/login");
-            return;
-        }
-
-        const fetchInitialData = async () => {
-            console.log("Fetching initial data for CreateTask, User:", user);
+        const fetchOptions = async () => {
             try {
-                const [taskRes, adayRes, typeRes, priorityRes, receiptRes, userRes, groupRes] = await Promise.all([
-                    api.get(`/tasks`),
-                    api.get(`/adaycaris/${user._id}`),
-                    api.get("/tasks/taskTypes"),
-                    api.get("/tasks/priorities"),
+                const [adayCaris, receiptTypes, priorities, taskTypes, users, groups] = await Promise.all([
+                    api.get(`/adaycaris/${JSON.parse(localStorage.getItem("user"))?._id}`),
                     api.get("/tasks/receiptTypes"),
+                    api.get("/tasks/priorities"),
+                    api.get("/tasks/taskTypes"),
                     api.get("/tasks/users"),
-                    api.get("/adaycaris/groups"),
+                    api.get("/tasks/groups"),
                 ]);
-                console.log("Tasks Response:", taskRes.data);
-                console.log("Aday Caris Response:", adayRes.data);
-                console.log("Task Types Response:", typeRes.data);
-                console.log("Priorities Response:", priorityRes.data);
-                console.log("Receipt Types Response:", receiptRes.data);
-                console.log("Users Response:", userRes.data);
-                console.log("Groups Response:", groupRes.data);
-
-                const tasks = Array.isArray(taskRes.data) ? taskRes.data : [];
-                const lastTask = tasks.length > 0 ? tasks.sort((a, b) => (b.taskNo || 0) - (a.taskNo || 0))[0] : null;
-                setInfo((prev) => ({ ...prev, taskNo: lastTask ? (lastTask.taskNo || 0) + 1 : 1, createdBy: user._id }));
-
-                const adayCarisData = adayRes.data.data || adayRes.data;
-                setAdayCaris(Array.isArray(adayCarisData) ? adayCarisData : []);
-
-                setTaskTypes(Array.isArray(typeRes.data) ? typeRes.data : []);
-                setPriorities(Array.isArray(priorityRes.data) ? priorityRes.data : []);
-                setReceiptTypes(Array.isArray(receiptRes.data) ? receiptRes.data : []);
-                setUsers(Array.isArray(userRes.data) ? userRes.data : []);
-                setGroups(Array.isArray(groupRes.data) ? groupRes.data : []);
-            } catch (err) {
-                console.error("Error fetching initial data:", err.response ? err.response.data : err.message);
-                if (err.response && err.response.status === 401) {
-                    console.log("401 Unauthorized: Token eksik veya geçersiz, giriş yapmayı deneyin.");
-                    navigate("/login");
-                }
+                setOptions({
+                    adayCaris: adayCaris.data.data,
+                    receiptTypes: receiptTypes.data,
+                    priorities: priorities.data,
+                    taskTypes: taskTypes.data,
+                    users: users.data,
+                    groups: groups.data,
+                });
+            } catch (error) {
+                setErrors({ submit: "Seçenekler yüklenemedi: " + (error.response?.data?.message || "Yetkisiz erişim!") });
             }
         };
-        if (user && user._id) fetchInitialData();
-    }, [user, navigate]);
+        fetchOptions();
+    }, []);
 
     const handleChange = (e) => {
-        setInfo((prev) => ({ ...prev, [e.target.id]: e.target.value }));
+        const { name, value } = e.target;
+        setTask((prev) => ({ ...prev, [name]: value }));
+        setErrors((prev) => ({ ...prev, [name]: "" })); // Hata mesajını sıfırla
     };
 
-    const handleCompletedToggle = () => {
-        setInfo((prev) => ({ ...prev, completed: !prev.completed }));
+    const validateForm = () => {
+        const newErrors = {};
+        if (!task.description) newErrors.description = "Açıklama zorunlu!";
+        if (task.description && task.description.length < 3) newErrors.description = "Açıklama en az 3 karakter olmalı!";
+        if (!task.taskDate) newErrors.taskDate = "Görev tarihi zorunlu!";
+        return newErrors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const newTask = { 
-            ...info,
-            description: info.description || "",
-            adayCari: info.adayCari || null,
-            taskDate: info.taskDate || null,
-            taskEndDate: info.taskEndDate || null,
-            receiptType: info.receiptType || null,
-            priority: info.priority || null,
-            createdBy: user._id,
-            taskType: info.taskType || null,
-            relatedUser: info.relatedUser || null,
-            relatedGroup: info.relatedGroup || null,
-            completed: info.completed || false,
-        };
-    
+        const validationErrors = validateForm();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+
         try {
-            await api.post("/tasks", newTask);
-            setPopup({ show: true, message: "Görev/Aktivite başarıyla eklendi!", isError: false });
-            setTimeout(() => {
-                setPopup({ show: false, message: "", isError: false });
-                navigate('/tasks');
-            }, 2000);
-        } catch (err) {
-            setPopup({ show: true, message: `Hata: ${err.response?.data?.message || err.message}`, isError: true });
-            setTimeout(() => setPopup({ show: false, message: "", isError: false }), 2000);
+            await api.post("/tasks/", task);
+            navigate("/tasks");
+        } catch (error) {
+            setErrors({ submit: error.response?.data?.message || "Görev oluşturulamadı!" });
         }
     };
 
@@ -109,104 +88,84 @@ const CreateTask = () => {
         <div className="create-aday-cari-container">
             <Navbar />
             <div className="form-container">
-                <h2>Görev/Akt. Ekle</h2>
+                <h2>Yeni Görev/Aktivite</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="input-group">
-                        <label>Görev/Aktivite No</label>
-                        <input type="number" id="taskNo" value={info.taskNo} disabled />
-                    </div>
-                    <div className="input-group">
-                        <label>C/H Ünvanı - Aday Cari</label>
-                        <select id="adayCari" onChange={handleChange}>
+                        <label>Aday Cari</label>
+                        <select name="adayCari" value={task.adayCari} onChange={handleChange}>
                             <option value="">Seçiniz</option>
-                            {adayCaris.map((aday) => (
+                            {options.adayCaris.map((aday) => (
                                 <option key={aday._id} value={aday._id}>{aday.chUnvani}</option>
                             ))}
                         </select>
                     </div>
                     <div className="input-group">
                         <label>Görev/Aktivite Tarihi</label>
-                        <input type="datetime-local" id="taskDate" onChange={handleChange} />
+                        <input type="datetime-local" name="taskDate" value={task.taskDate} onChange={handleChange} />
+                        {errors.taskDate && <span className="error">{errors.taskDate}</span>}
                     </div>
                     <div className="input-group">
                         <label>Görev/Aktivite Bitiş Tarihi</label>
-                        <input type="datetime-local" id="taskEndDate" onChange={handleChange} />
+                        <input type="datetime-local" name="taskEndDate" value={task.taskEndDate} onChange={handleChange} />
                     </div>
                     <div className="input-group">
                         <label>Fiş Türü</label>
-                        <select id="receiptType" onChange={handleChange}>
+                        <select name="receiptType" value={task.receiptType} onChange={handleChange}>
                             <option value="">Seçiniz</option>
-                            {receiptTypes.map((type) => (
+                            {options.receiptTypes.map((type) => (
                                 <option key={type._id} value={type._id}>{type.name}</option>
                             ))}
                         </select>
                     </div>
                     <div className="input-group">
                         <label>Öncelik</label>
-                        <select id="priority" onChange={handleChange}>
+                        <select name="priority" value={task.priority} onChange={handleChange}>
                             <option value="">Seçiniz</option>
-                            {priorities.map((priority) => (
+                            {options.priorities.map((priority) => (
                                 <option key={priority._id} value={priority._id}>{priority.name}</option>
                             ))}
                         </select>
                     </div>
                     <div className="input-group">
-                        <label>Görev/Aktivite Açan</label>
-                        <input type="text" id="createdBy" value={user?.username || "Bilinmiyor"} disabled />
-                    </div>
-                    <div className="input-group">
                         <label>Görev/Aktivite Türü</label>
-                        <select id="taskType" onChange={handleChange}>
+                        <select name="taskType" value={task.taskType} onChange={handleChange}>
                             <option value="">Seçiniz</option>
-                            {taskTypes.map((type) => (
+                            {options.taskTypes.map((type) => (
                                 <option key={type._id} value={type._id}>{type.name}</option>
                             ))}
                         </select>
                     </div>
                     <div className="input-group">
                         <label>İlişkili Kullanıcı</label>
-                        <select id="relatedUser" onChange={handleChange}>
+                        <select name="relatedUser" value={task.relatedUser} onChange={handleChange}>
                             <option value="">Seçiniz</option>
-                            {users.map((user) => (
+                            {options.users.map((user) => (
                                 <option key={user._id} value={user._id}>{user.username}</option>
                             ))}
                         </select>
                     </div>
                     <div className="input-group">
                         <label>İlişkili Kullanıcı Grubu</label>
-                        <select id="relatedGroup" onChange={handleChange}>
+                        <select name="relatedGroup" value={task.relatedGroup} onChange={handleChange}>
                             <option value="">Seçiniz</option>
-                            {groups.map((group) => (
+                            {options.groups.map((group) => (
                                 <option key={group._id} value={group._id}>{group.name}</option>
                             ))}
                         </select>
                     </div>
                     <div className="input-group">
-                        <label>Tamamlandı</label>
-                        <button
-                            type="button"
-                            className={`complete-btn ${info.completed ? "completed" : ""}`}
-                            onClick={handleCompletedToggle}
-                        >
-                            {info.completed ? "✓" : ""}
-                        </button>
-                    </div>
-                    <div className="input-group">
                         <label>Açıklama</label>
-                        <textarea id="description" onChange={handleChange} />
+                        <textarea name="description" value={task.description} onChange={handleChange}></textarea>
+                        {errors.description && <span className="error">{errors.description}</span>}
                     </div>
+                    {errors.submit && <div className="error-message">{errors.submit}</div>}
                     <div className="button-group">
                         <button type="submit" className="save-btn">Kaydet</button>
-                        <button type="button" className="cancel-btn" onClick={() => navigate('/tasks')}>
-                            Vazgeç
+                        <button type="button" className="cancel-btn" onClick={() => navigate("/tasks")}>
+                            İptal
                         </button>
                     </div>
                 </form>
-                {popup.show && (
-                    <div className={`popup ${popup.isError ? "error" : "success"}`}>
-                        {popup.message}
-                    </div>
-                )}
             </div>
         </div>
     );
