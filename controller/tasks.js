@@ -4,10 +4,15 @@ import { createError } from "../error.js";
 // Görevleri Listeleme
 export const getTasks = async (req, res, next) => {
     try {
-        const tasksQuery = req.user.role === "staff" 
-            ? { createdBy: new mongoose.Types.ObjectId(req.user.id) } // Personel sadece kendi görevlerini görür
-            : {}; // Admin ve manager tüm görevleri görür
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
 
+        const tasksQuery = req.user.role === "staff" 
+            ? { createdBy: new mongoose.Types.ObjectId(req.user.id) }
+            : {};
+
+        const total = await mongoose.connection.db.collection("tasks").countDocuments(tasksQuery);
         const tasks = await mongoose.connection.db.collection("tasks")
             .aggregate([
                 { $match: tasksQuery },
@@ -26,10 +31,18 @@ export const getTasks = async (req, res, next) => {
                 { $lookup: { from: "groups", localField: "relatedGroup", foreignField: "_id", as: "relatedGroup" } },
                 { $unwind: { path: "$relatedGroup", preserveNullAndEmptyArrays: true } }
             ])
+            .skip(skip)
+            .limit(limit)
             .toArray();
-        res.status(200).json(tasks);
+
+        res.status(200).json({
+            data: tasks,
+            total,
+            page,
+            pages: Math.ceil(total / limit)
+        });
     } catch (err) {
-        next(createError(500, "Görevler alınamadı: " + err.message));
+        next(createError(500, "Görevler alınamadı!", { error: err.message }));
     }
 };
 
@@ -42,7 +55,7 @@ export const createTask = async (req, res, next) => {
         const newTask = {
             ...req.body,
             taskNo: newTaskNo,
-            createdBy: req.user.id, // Görevi oluşturan kullanıcı
+            createdBy: req.user.id,
             adayCari: req.body.adayCari ? new mongoose.Types.ObjectId(req.body.adayCari) : null,
             receiptType: req.body.receiptType ? new mongoose.Types.ObjectId(req.body.receiptType) : null,
             priority: req.body.priority ? new mongoose.Types.ObjectId(req.body.priority) : null,
@@ -54,7 +67,17 @@ export const createTask = async (req, res, next) => {
         const insertedTask = await mongoose.connection.db.collection("tasks").findOne({ _id: result.insertedId });
         res.status(201).json(insertedTask);
     } catch (err) {
-        next(createError(500, "Görev oluşturulamadı: " + err.message));
+        if (err.name === "ValidationError") {
+            const errors = Object.keys(err.errors).map(key => ({
+                field: key,
+                message: err.errors[key].message
+            }));
+            return next(createError(400, "Geçersiz veri girişi!", errors));
+        }
+        if (err.code === 11000) {
+            return next(createError(400, "Bu görev numarası zaten kullanılıyor!"));
+        }
+        next(createError(500, "Görev oluşturulamadı!", { error: err.message }));
     }
 };
 
@@ -69,7 +92,6 @@ export const updateTask = async (req, res, next) => {
         if (!updatedTask.value) {
             return next(createError(404, "Güncellenecek görev bulunamadı!"));
         }
-        // Populate işlemini tekrar yapalım
         const taskWithRelations = await mongoose.connection.db.collection("tasks")
             .aggregate([
                 { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
@@ -91,7 +113,17 @@ export const updateTask = async (req, res, next) => {
             .toArray();
         res.status(200).json(taskWithRelations[0]);
     } catch (err) {
-        next(createError(500, "Görev güncellenemedi: " + err.message));
+        if (err.name === "ValidationError") {
+            const errors = Object.keys(err.errors).map(key => ({
+                field: key,
+                message: err.errors[key].message
+            }));
+            return next(createError(400, "Geçersiz veri girişi!", errors));
+        }
+        if (err.code === 11000) {
+            return next(createError(400, "Bu görev numarası zaten kullanılıyor!"));
+        }
+        next(createError(500, "Görev güncellenemedi!", { error: err.message }));
     }
 };
 
@@ -106,14 +138,18 @@ export const deleteTask = async (req, res, next) => {
         }
         res.status(200).json({ message: "Görev başarıyla silindi." });
     } catch (err) {
-        next(createError(500, "Görev silinemedi: " + err.message));
+        next(createError(500, "Görev silinemedi!", { error: err.message }));
     }
 };
 
 // Görev Arama
 export const searchTasks = async (req, res, next) => {
     try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
         const query = req.query.query;
+
         const tasksQuery = req.user.role === "staff" 
             ? { 
                 createdBy: new mongoose.Types.ObjectId(req.user.id), 
@@ -128,6 +164,14 @@ export const searchTasks = async (req, res, next) => {
                     { "adayCari.chUnvani": { $regex: query, $options: "i" } }
                 ]
               };
+
+        const total = await mongoose.connection.db.collection("tasks")
+            .aggregate([
+                { $lookup: { from: "adaycaris", localField: "adayCari", foreignField: "_id", as: "adayCari" } },
+                { $unwind: { path: "$adayCari", preserveNullAndEmptyArrays: true } },
+                { $match: tasksQuery }
+            ])
+            .toArray().then(results => results.length);
 
         const tasks = await mongoose.connection.db.collection("tasks")
             .aggregate([
@@ -147,9 +191,17 @@ export const searchTasks = async (req, res, next) => {
                 { $lookup: { from: "groups", localField: "relatedGroup", foreignField: "_id", as: "relatedGroup" } },
                 { $unwind: { path: "$relatedGroup", preserveNullAndEmptyArrays: true } }
             ])
+            .skip(skip)
+            .limit(limit)
             .toArray();
-        res.status(200).json(tasks);
+
+        res.status(200).json({
+            data: tasks,
+            total,
+            page,
+            pages: Math.ceil(total / limit)
+        });
     } catch (err) {
-        next(createError(500, "Görevler aranırken hata oluştu: " + err.message));
+        next(createError(500, "Görevler aranırken hata oluştu!", { error: err.message }));
     }
 };
