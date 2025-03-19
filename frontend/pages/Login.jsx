@@ -1,45 +1,29 @@
-import React, { useState, useContext } from "react";
-import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import api from "../api";
 import { AuthContext } from "../authContext";
 import "../styles/login.css";
 
-function Login() {
+const Login = () => {
     const [credentials, setCredentials] = useState({ username: "", password: "" });
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(false);
-
+    const [error, setError] = useState("");
     const { dispatch } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
-        setCredentials((prev) => ({ ...prev, [e.target.id]: e.target.value }));
+        setCredentials((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    const handleClick = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        if (!credentials.username || !credentials.password) {
-            setError("Kullanıcı adı ve şifre zorunlu.");
-            return;
-        }
-    
         dispatch({ type: "LOGIN_START" });
-        setLoading(true);
-    
         try {
-            const res = await axios.post("http://localhost:7700/api/users/login", credentials, {
-                withCredentials: true,
-            });
-            console.log("Giriş başarılı, Response:", res.data); // Token’ı kontrol et
+            const res = await api.post("/users/login", credentials);
             dispatch({ type: "LOGIN_SUCCESS", payload: res.data.details });
-            navigate('/');
+            navigate("/");
         } catch (err) {
-            const errorMsg = err.response?.data?.message || "Giriş sırasında hata oluştu.";
-            console.error("Giriş hatası:", err.response?.data || err);
-            setError(errorMsg);
-            dispatch({ type: "LOGIN_FAILURE", payload: errorMsg });
-        } finally {
-            setLoading(false);
+            setError(err.response?.data?.message || "Giriş başarısız!");
+            dispatch({ type: "LOGIN_FAILURE", payload: err.response?.data });
         }
     };
 
@@ -48,37 +32,23 @@ function Login() {
             <div className="loginCard">
                 <div className="center">
                     <h1>Giriş Yap</h1>
-                    <form onSubmit={handleClick}>
+                    <form>
                         <div className="txt_field">
-                            <input
-                                type="text"
-                                placeholder="Kullanıcı Adı"
-                                id="username"
-                                onChange={handleChange}
-                                value={credentials.username}
-                            />
+                            <input type="text" name="username" onChange={handleChange} placeholder="Kullanıcı Adı" />
                         </div>
                         <div className="txt_field">
-                            <input
-                                type="password"
-                                placeholder="Şifre"
-                                id="password"
-                                onChange={handleChange}
-                                value={credentials.password}
-                            />
+                            <input type="password" name="password" onChange={handleChange} placeholder="Şifre" />
                         </div>
                         {error && <div className="error-message">{error}</div>}
-                        <button type="submit" className="login_button" disabled={loading}>
-                            {loading ? "Yükleniyor..." : "Giriş Yap"}
-                        </button>
+                        <button className="login_button" onClick={handleLogin}>Giriş Yap</button>
                         <div className="signup_link">
-                            <p>Hesabın yok mu? <Link to="/register">Kayıt Ol</Link></p>
+                            Hesabınız yok mu? <a href="/register">Kayıt Ol</a>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     );
-}
+};
 
 export default Login;
