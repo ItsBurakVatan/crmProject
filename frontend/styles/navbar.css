@@ -1,10 +1,20 @@
+:root {
+    --primary-color: #27ae60;
+    --primary-hover: #219653;
+    --danger-color: #e74c3c;
+    --danger-hover: #c82333;
+    --text-color: #34495e;
+    --background-light: #f4f6f8;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .navContainer {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    background-color: #2c3e50;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    background-color: var(--text-color);
+    box-shadow: var(--shadow);
     padding: 0 5%;
     display: flex;
     align-items: center;
@@ -50,13 +60,13 @@
     padding: 5px 0;
 }
 
-.navbar .dropdown-menu.open {
-    display: block; /* Tıklama ile açılır */
-}
-
-
 .navbar .dropdown-menu li a:hover {
     color: #ddd;
+}
+
+.navbar .dropdown-menu li a:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
 }
 
 .navbar .dropdown:hover .dropdown-menu {
@@ -83,13 +93,18 @@
     color: #f1c40f;
 }
 
+.navbar ul li a:focus, .navbar ul li span:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .navbar ul li a.active {
     background-color: #34495e;
     color: #f1c40f;
     border-radius: 5px;
 }
 
-#menu-bar {
+.menu-toggle {
     display: none;
 }
 
@@ -97,6 +112,7 @@
     color: #ecf0f1;
     font-size: 24px;
     cursor: pointer;
+    display: none;
 }
 
 /* Mobil Uyumluluk */
@@ -104,8 +120,8 @@
     .navContainer {
         height: 50px;
         padding: 0 3%;
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        justify-content: space-between;
     }
 
     .navLogo {
@@ -118,13 +134,21 @@
         top: 50px;
         left: -100%;
         width: 100%;
-        background-color: #2c3e50;
+        background-color: var(--text-color);
         transition: left 0.3s ease;
         padding: 10px 0;
     }
 
-    #menu-bar:checked ~ .navbar {
+    .menu-toggle {
+        display: none;
+    }
+
+    .menu-toggle:checked ~ .navbar {
         left: 0;
+    }
+
+    .icon {
+        display: block;
     }
 
     .navbar ul {
@@ -149,13 +173,14 @@
         width: 100%;
         background-color: #444;
         padding: 5px 0;
+        display: none;
     }
 
     .navbar .dropdown:hover .dropdown-menu {
-        display: none; /* Mobil için hover yerine tıklama ile açılabilir */
+        display: none;
     }
 
-    .navbar .dropdown:active .dropdown-menu {
-        display: block; /* Tıklama ile açılır */
+    .menu-toggle:checked ~ .navbar .dropdown-menu {
+        display: block;
     }
 }
