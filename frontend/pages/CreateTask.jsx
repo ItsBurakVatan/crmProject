@@ -17,7 +17,8 @@ const CreateTask = () => {
         description: "",
         completed: false,
     });
-    const [errors, setErrors] = useState({}); // Form doğrulama hataları için
+    const [errors, setErrors] = useState({});
+    const [generalError, setGeneralError] = useState(""); // Genel hata mesajı için
     const [options, setOptions] = useState({
         adayCaris: [],
         receiptTypes: [],
@@ -58,21 +59,29 @@ const CreateTask = () => {
         const { name, value } = e.target;
         setTask((prev) => ({ ...prev, [name]: value }));
         setErrors((prev) => ({ ...prev, [name]: "" })); // Hata mesajını sıfırla
+        setGeneralError(""); // Genel hata mesajını sıfırla
     };
 
     const validateForm = () => {
         const newErrors = {};
-        if (!task.description) newErrors.description = "Açıklama zorunlu!";
-        if (task.description && task.description.length < 3) newErrors.description = "Açıklama en az 3 karakter olmalı!";
+        if (!task.adayCari) newErrors.adayCari = "Aday cari zorunlu!";
         if (!task.taskDate) newErrors.taskDate = "Görev tarihi zorunlu!";
+        if (!task.taskEndDate) newErrors.taskEndDate = "Görev bitiş tarihi zorunlu!";
+        if (!task.receiptType) newErrors.receiptType = "Fiş türü zorunlu!";
+        if (!task.priority) newErrors.priority = "Öncelik zorunlu!";
+        if (!task.taskType) newErrors.taskType = "Görev türü zorunlu!";
         return newErrors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrors({});
+        setGeneralError("");
+
         const validationErrors = validateForm();
         if (Object.keys(validationErrors).length > 0) {
             setErrors(validationErrors);
+            setGeneralError("Lütfen yukarıdaki zorunlu alanları doldurun veya hataları düzeltin.");
             return;
         }
 
@@ -81,6 +90,7 @@ const CreateTask = () => {
             navigate("/tasks");
         } catch (error) {
             setErrors({ submit: error.response?.data?.message || "Görev oluşturulamadı!" });
+            setGeneralError("Bir hata oluştu, lütfen tekrar deneyin.");
         }
     };
 
@@ -98,6 +108,7 @@ const CreateTask = () => {
                                 <option key={aday._id} value={aday._id}>{aday.chUnvani}</option>
                             ))}
                         </select>
+                        {errors.adayCari && <span className="error">{errors.adayCari}</span>}
                     </div>
                     <div className="input-group">
                         <label>Görev/Aktivite Tarihi</label>
@@ -107,6 +118,7 @@ const CreateTask = () => {
                     <div className="input-group">
                         <label>Görev/Aktivite Bitiş Tarihi</label>
                         <input type="datetime-local" name="taskEndDate" value={task.taskEndDate} onChange={handleChange} />
+                        {errors.taskEndDate && <span className="error">{errors.taskEndDate}</span>}
                     </div>
                     <div className="input-group">
                         <label>Fiş Türü</label>
@@ -116,6 +128,7 @@ const CreateTask = () => {
                                 <option key={type._id} value={type._id}>{type.name}</option>
                             ))}
                         </select>
+                        {errors.receiptType && <span className="error">{errors.receiptType}</span>}
                     </div>
                     <div className="input-group">
                         <label>Öncelik</label>
@@ -125,6 +138,7 @@ const CreateTask = () => {
                                 <option key={priority._id} value={priority._id}>{priority.name}</option>
                             ))}
                         </select>
+                        {errors.priority && <span className="error">{errors.priority}</span>}
                     </div>
                     <div className="input-group">
                         <label>Görev/Aktivite Türü</label>
@@ -134,6 +148,7 @@ const CreateTask = () => {
                                 <option key={type._id} value={type._id}>{type.name}</option>
                             ))}
                         </select>
+                        {errors.taskType && <span className="error">{errors.taskType}</span>}
                     </div>
                     <div className="input-group">
                         <label>İlişkili Kullanıcı</label>
@@ -165,6 +180,7 @@ const CreateTask = () => {
                             İptal
                         </button>
                     </div>
+                    {generalError && <div className="general-error">{generalError}</div>}
                 </form>
             </div>
         </div>
