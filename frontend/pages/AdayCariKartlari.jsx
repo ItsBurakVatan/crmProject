@@ -3,6 +3,7 @@ import Navbar from "./Navbar";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../authContext";
 import useFetch from "../useFetch";
+import api from "../api"; // api dosyasını ekledik
 import "../styles/adayCariKartlari.css";
 
 const AdayCariKartlari = () => {
@@ -12,10 +13,13 @@ const AdayCariKartlari = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const [contextMenu, setContextMenu] = useState(null);
+    const [showPopup, setShowPopup] = useState(false);
+    const [editAdayCari, setEditAdayCari] = useState(null);
     const { user } = React.useContext(AuthContext);
     const navigate = useNavigate();
 
-    const { data, loading: fetchLoading, error: fetchError } = useFetch(`/adaycaris/${user?._id}?page=${page}&limit=10`);
+    const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(`/adaycaris/${user?._id}?page=${page}&limit=10`);
 
     useEffect(() => {
         if (data) {
@@ -32,22 +36,50 @@ const AdayCariKartlari = () => {
         setSearchQuery(e.target.value);
         if (e.target.value) {
             try {
-                const response = await fetch(`http://localhost:7700/api/adaycaris/search/${user?._id}?query=${e.target.value}`, {
-                    credentials: "include",
-                });
-                const result = await response.json();
-                setAdayCaris(result);
+                const response = await api.get(`/adaycaris/search/${user?._id}?query=${e.target.value}`);
+                setAdayCaris(response.data);
                 setError(null);
             } catch (error) {
                 setError("Arama sırasında hata oluştu: " + error.message);
             }
         } else {
-            setAdayCaris(data?.data || []);
+            reFetch();
+        }
+    };
+
+    const handleContextMenu = (e, aday) => {
+        e.preventDefault();
+        setContextMenu({ x: e.pageX, y: e.pageY, aday });
+    };
+
+    const closeContextMenu = () => setContextMenu(null);
+
+    const handleEditAdayCari = async () => {
+        if (!editAdayCari) return;
+        try {
+            const response = await api.put(`/adaycaris/${editAdayCari._id}`, editAdayCari);
+            setAdayCaris(adayCaris.map(aday => aday._id === editAdayCari._id ? response.data : aday));
+            setEditAdayCari(null);
+            setShowPopup(false);
+            setError(null);
+        } catch (error) {
+            setError(error.response?.data?.message || "Aday cari kartı düzenlenemedi.");
+        }
+    };
+
+    const handleDeleteAdayCari = async (id) => {
+        try {
+            await api.delete(`/adaycaris/${id}`);
+            setAdayCaris(adayCaris.filter(aday => aday._id !== id));
+            setContextMenu(null);
+            setError(null);
+        } catch (error) {
+            setError(error.response?.data?.message || "Aday cari kartı silinemedi.");
         }
     };
 
     return (
-        <div>
+        <div onClick={closeContextMenu}>
             <Navbar />
             <div className="aday-cari-header">
                 <input
@@ -93,7 +125,7 @@ const AdayCariKartlari = () => {
                                 <tr><td colSpan="19">Yükleniyor...</td></tr>
                             ) : adayCaris.length > 0 ? (
                                 adayCaris.map((aday) => (
-                                    <tr key={aday._id}>
+                                    <tr key={aday._id} onContextMenu={(e) => handleContextMenu(e, aday)}>
                                         <td data-label="Aday Kodu">{aday.adayKodu}</td>
                                         <td data-label="C/H Ünvanı">{aday.chUnvani}</td>
                                         <td data-label="Yetkili Adı Soyadı">{aday.yetkiliAdiSoyadi || "-"}</td>
@@ -127,6 +159,67 @@ const AdayCariKartlari = () => {
                     <button onClick={() => setPage(page + 1)} disabled={page === totalPages}>Sonraki</button>
                 </div>
             </div>
+
+            {showPopup && (
+                <div className="popup-overlay">
+                    <div className="popup-modern">
+                        <h3 className="popup-title">Aday Cari Kartı Düzenle</h3>
+                        <input
+                            type="text"
+                            value={editAdayCari?.chUnvani || ""}
+                            onChange={(e) => setEditAdayCari({ ...editAdayCari, chUnvani: e.target.value })}
+                            placeholder="C/H Ünvanı"
+                            className="popup-input"
+                        />
+                        <input
+                            type="text"
+                            value={editAdayCari?.yetkiliAdiSoyadi || ""}
+                            onChange={(e) => setEditAdayCari({ ...editAdayCari, yetkiliAdiSoyadi: e.target.value })}
+                            placeholder="Yetkili Adı Soyadı"
+                            className="popup-input"
+                        />
+                        <input
+                            type="text"
+                            value={editAdayCari?.yetkiliTelefon || ""}
+                            onChange={(e) => setEditAdayCari({ ...editAdayCari, yetkiliTelefon: e.target.value })}
+                            placeholder="Yetkili Telefon"
+                            className="popup-input"
+                        />
+                        <input
+                            type="text"
+                            value={editAdayCari?.adres || ""}
+                            onChange={(e) => setEditAdayCari({ ...editAdayCari, adres: e.target.value })}
+                            placeholder="Adres"
+                            className="popup-input"
+                        />
+                        <div className="popup-buttons">
+                            <button className="popup-btn popup-btn-save" onClick={handleEditAdayCari}>
+                                Kaydet
+                            </button>
+                            <button className="popup-btn popup-btn-cancel" onClick={() => setShowPopup(false)}>
+                                İptal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {contextMenu && (
+                <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
+                    <div
+                        className="context-menu-item"
+                        onClick={() => { setEditAdayCari(contextMenu.aday); setShowPopup(true); setContextMenu(null); }}
+                    >
+                        Düzenle
+                    </div>
+                    <div
+                        className="context-menu-item delete"
+                        onClick={() => handleDeleteAdayCari(contextMenu.aday._id)}
+                    >
+                        Sil
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
