@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { createError } from "../error.js";
+import Task from "../models/Task.js"; // Modeli import et
+
 
 // Görevleri Listeleme
 export const getTasks = async (req, res, next) => {
@@ -84,35 +86,51 @@ export const createTask = async (req, res, next) => {
 // Görev Güncelleme
 export const updateTask = async (req, res, next) => {
     try {
-        const updatedTask = await mongoose.connection.db.collection("tasks").findOneAndUpdate(
-            { _id: new mongoose.Types.ObjectId(req.params.id) },
-            { $set: req.body },
-            { returnDocument: "after" }
-        );
-        if (!updatedTask.value) {
+        const taskId = req.params.id;
+        console.log("Updating task:", taskId, "with data:", req.body); // Gönderilen veriyi logla
+
+        // Mevcut görevi bul
+        const existingTask = await Task.findById(taskId);
+        if (!existingTask) {
             return next(createError(404, "Güncellenecek görev bulunamadı!"));
         }
-        const taskWithRelations = await mongoose.connection.db.collection("tasks")
-            .aggregate([
-                { $match: { _id: new mongoose.Types.ObjectId(req.params.id) } },
-                { $lookup: { from: "adaycaris", localField: "adayCari", foreignField: "_id", as: "adayCari" } },
-                { $unwind: { path: "$adayCari", preserveNullAndEmptyArrays: true } },
-                { $lookup: { from: "receiptTypes", localField: "receiptType", foreignField: "_id", as: "receiptType" } },
-                { $unwind: { path: "$receiptType", preserveNullAndEmptyArrays: true } },
-                { $lookup: { from: "priorities", localField: "priority", foreignField: "_id", as: "priority" } },
-                { $unwind: { path: "$priority", preserveNullAndEmptyArrays: true } },
-                { $lookup: { from: "users", localField: "createdBy", foreignField: "_id", as: "createdBy" } },
-                { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } },
-                { $lookup: { from: "taskTypes", localField: "taskType", foreignField: "_id", as: "taskType" } },
-                { $unwind: { path: "$taskType", preserveNullAndEmptyArrays: true } },
-                { $lookup: { from: "users", localField: "relatedUser", foreignField: "_id", as: "relatedUser" } },
-                { $unwind: { path: "$relatedUser", preserveNullAndEmptyArrays: true } },
-                { $lookup: { from: "groups", localField: "relatedGroup", foreignField: "_id", as: "relatedGroup" } },
-                { $unwind: { path: "$relatedGroup", preserveNullAndEmptyArrays: true } }
-            ])
-            .toArray();
+
+        // Zorunlu alanları koru, sadece güncellenecek alanları birleştir
+        const updateData = {
+            taskNo: existingTask.taskNo, // Zorunlu alan
+            createdBy: existingTask.createdBy, // Zorunlu alan
+            ...req.body // Frontend'den gelen verilerle birleştir
+        };
+
+        // Güncelle ve doğrulayıcıları çalıştır
+        const updatedTask = await Task.findByIdAndUpdate(
+            taskId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        );
+
+        // İlişkisel verileri aggregate ile getir
+        const taskWithRelations = await Task.aggregate([
+            { $match: { _id: new mongoose.Types.ObjectId(taskId) } },
+            { $lookup: { from: "adaycaris", localField: "adayCari", foreignField: "_id", as: "adayCari" } },
+            { $unwind: { path: "$adayCari", preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: "receipttypes", localField: "receiptType", foreignField: "_id", as: "receiptType" } },
+            { $unwind: { path: "$receiptType", preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: "priorities", localField: "priority", foreignField: "_id", as: "priority" } },
+            { $unwind: { path: "$priority", preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: "users", localField: "createdBy", foreignField: "_id", as: "createdBy" } },
+            { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: "tasktypes", localField: "taskType", foreignField: "_id", as: "taskType" } },
+            { $unwind: { path: "$taskType", preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: "users", localField: "relatedUser", foreignField: "_id", as: "relatedUser" } },
+            { $unwind: { path: "$relatedUser", preserveNullAndEmptyArrays: true } },
+            { $lookup: { from: "groups", localField: "relatedGroup", foreignField: "_id", as: "relatedGroup" } },
+            { $unwind: { path: "$relatedGroup", preserveNullAndEmptyArrays: true } }
+        ]);
+
         res.status(200).json(taskWithRelations[0]);
     } catch (err) {
+        console.error("Update task error:", err); // Hata detayını logla
         if (err.name === "ValidationError") {
             const errors = Object.keys(err.errors).map(key => ({
                 field: key,
