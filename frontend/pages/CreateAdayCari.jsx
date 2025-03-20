@@ -6,7 +6,7 @@ import "../styles/createAdayCari.css";
 import { useNavigate } from "react-router-dom";
 
 const CreateAdayCari = () => {
-    const [info, setInfo] = useState({ adayKodu: 1 });
+    const [info, setInfo] = useState({ adayKodu: 1, role: "" });
     const [errors, setErrors] = useState({});
     const [generalError, setGeneralError] = useState("");
     const [popup, setPopup] = useState({ show: false, message: "", isError: false });
@@ -17,6 +17,7 @@ const CreateAdayCari = () => {
     const [staff, setStaff] = useState([]);
     const [groups, setGroups] = useState([]);
     const [status, setStatus] = useState([]);
+    const [roles, setRoles] = useState([]);
     const { user } = useContext(AuthContext);
     const navigate = useNavigate();
 
@@ -28,13 +29,14 @@ const CreateAdayCari = () => {
 
         const fetchInitialData = async () => {
             try {
-                const [adayRes, branchRes, countryRes, staffRes, groupRes, statusRes] = await Promise.all([
+                const [adayRes, branchRes, countryRes, staffRes, groupRes, statusRes, rolesRes] = await Promise.all([
                     api.get(`/adaycaris/${user._id}`),
                     api.get("/adaycaris/branchs"),
                     api.get("/adaycaris/countries"),
                     api.get("/adaycaris/staff"),
                     api.get("/adaycaris/groups"),
                     api.get("/adaycaris/status"),
+                    api.get("/roles"), 
                 ]);
                 const adayCaris = adayRes.data.data || [];
                 const lastAday = adayCaris.length > 0 ? adayCaris.sort((a, b) => b.adayKodu - a.adayKodu)[0] : null;
@@ -44,6 +46,7 @@ const CreateAdayCari = () => {
                 setStaff(staffRes.data);
                 setGroups(groupRes.data);
                 setStatus(statusRes.data);
+                setRoles(rolesRes.data); 
             } catch (err) {
                 console.error("Error fetching initial data:", err.response ? err.response.data : err.message);
             }
@@ -91,7 +94,6 @@ const CreateAdayCari = () => {
 
         // Zorunlu alanlar
         if (!info.chUnvani) newErrors.chUnvani = "Bu alanı doldurmak zorunlu!";
-        if (!info.company) newErrors.company = "Bu alanı doldurmak zorunlu!";
         if (!info.sube) newErrors.sube = "Bu alanı doldurmak zorunlu!";
         if (!info.ulke) newErrors.ulke = "Bu alanı doldurmak zorunlu!";
         if (!info.il) newErrors.il = "Bu alanı doldurmak zorunlu!";
@@ -111,29 +113,29 @@ const CreateAdayCari = () => {
         e.preventDefault();
         setErrors({});
         setGeneralError("");
-
-        // İstemci tarafı doğrulama
+    
         const clientErrors = validateForm();
+        console.log("Validation Errors:", clientErrors);
         if (Object.keys(clientErrors).length > 0) {
             setErrors(clientErrors);
             setGeneralError("Lütfen yukarıdaki zorunlu alanları doldurun veya hataları düzeltin.");
             return;
         }
-
+    
         const telefonKodu = info.telefonKodu || "+90";
         const yetkiliTelefonRaw = info.yetkiliTelefon || "";
         const fullTelefon = yetkiliTelefonRaw ? `${telefonKodu}${yetkiliTelefonRaw}` : undefined;
-
+    
         const newAdayCari = {
             adayKodu: Number(info.adayKodu) || 1,
-            company: user._id,
-            sube: info.sube || undefined,
-            chUnvani: info.chUnvani || undefined,
+            company: user._id, // Zorunlu ve user._id'den geliyor
+            sube: info.sube ? info.sube : undefined, // ObjectId olmalı
+            chUnvani: info.chUnvani, // Zorunlu
             adres: info.adres || "",
-            ulke: info.ulke || undefined,
-            il: info.il || undefined,
-            ilce: info.ilce || undefined,
-            sorumluPersonel: info.sorumluPersonel || undefined,
+            ulke: info.ulke ? info.ulke : undefined, // ObjectId olmalı
+            il: info.il ? info.il : undefined, // ObjectId olmalı
+            ilce: info.ilce ? info.ilce : undefined, // ObjectId olmalı
+            sorumluPersonel: info.sorumluPersonel ? info.sorumluPersonel : undefined,
             yetkiliAdiSoyadi: info.yetkiliAdiSoyadi || "",
             yetkiliGorevi: info.yetkiliGorevi || "",
             yetkiliEmail: info.yetkiliEmail || "",
@@ -142,12 +144,13 @@ const CreateAdayCari = () => {
             vergiNo: info.vergiNo || "",
             tcKimlikNo: info.tcKimlikNo || "",
             aciklama: info.aciklama || "",
-            durumu: info.durumu || undefined,
-            cariHesapGrubu: info.cariHesapGrubu || undefined,
+            durumu: info.durumu ? info.durumu : undefined,
+            cariHesapGrubu: info.cariHesapGrubu ? info.cariHesapGrubu : undefined,
             musteriHikayesi: info.musteriHikayesi || "",
         };
-
+    
         try {
+            console.log("Gönderilen veri:", newAdayCari); // Gönderilen veriyi logla
             const response = await api.post("/adaycaris", newAdayCari);
             setPopup({ show: true, message: "Aday cari başarıyla eklendi!", isError: false });
             setTimeout(() => {
@@ -161,8 +164,9 @@ const CreateAdayCari = () => {
                     acc[error.field] = error.message;
                     return acc;
                 }, {});
+                console.log("Backend Hata Detayları:", errorDetails);
                 setErrors(errorDetails);
-                setGeneralError("Lütfen yukarıdaki zorunlu alanları doldurun veya hataları düzeltin.");
+                setGeneralError("Lütfen yukarıdaki alanları kontrol edin.");
             } else {
                 const errorMessage = err.response?.data?.message || "Bir hata oluştu!";
                 setGeneralError(errorMessage);
