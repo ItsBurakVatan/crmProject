@@ -1,14 +1,24 @@
+:root {
+    --primary-color: #27ae60;
+    --primary-hover: #219653;
+    --danger-color: #e74c3c;
+    --danger-hover: #c82333;
+    --text-color: #34495e;
+    --background-light: #f4f6f8;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
 .home-container {
     padding: 80px 20px 20px;
     font-family: "Manrope", sans-serif;
-    background-color: #f4f6f8;
+    background-color: var(--background-light);
     min-height: 100vh;
 }
 
 .welcome-message {
     background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
     padding: 30px;
     text-align: center;
     margin-bottom: 30px;
@@ -16,7 +26,7 @@
 
 .welcome-message h1 {
     font-size: 28px;
-    color: #2c3e50;
+    color: var(--text-color);
     margin-bottom: 15px;
 }
 
@@ -28,14 +38,14 @@
 .home-info {
     background-color: #fff;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
     padding: 30px;
     text-align: center;
 }
 
 .home-info h2 {
     font-size: 24px;
-    color: #2c3e50;
+    color: var(--text-color);
     margin-bottom: 15px;
 }
 
