@@ -1,0 +1,145 @@
+:root {
+    --primary-color: #27ae60;
+    --primary-hover: #219653;
+    --danger-color: #e74c3c;
+    --text-color: #34495e;
+    --background-light: #f4f6f8;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.reports-container {
+    background-color: var(--background-light);
+    min-height: 100vh;
+    padding-top: 80px; /* Navbar ile çakışmasın */
+}
+
+.report-selector {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.report-selector button {
+    padding: 10px 20px;
+    background-color: #ecf0f1;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.report-selector button.active,
+.report-selector button:hover {
+    background-color: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.report-section h3 {
+    color: var(--text-color);
+    font-size: 22px;
+    margin-bottom: 15px;
+}
+
+.error-message {
+    color: var(--danger-color);
+    font-size: 14px;
+    text-align: center;
+    margin-top: 10px;
+}
+
+:root {
+    --primary-color: #27ae60;
+    --primary-hover: #219653;
+    --danger-color: #e74c3c;
+    --text-color: #34495e;
+    --background-light: #f4f6f8;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.reports-container {
+    background-color: var(--background-light);
+    min-height: 100vh;
+    padding-top: 80px; /* Navbar ile çakışmasın */
+}
+
+.reports-content {
+    width: 90%;
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.reports-content h2 {
+    text-align: center;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    font-size: 28px;
+}
+
+.report-display {
+    padding: 20px;
+    background-color: #f9fafb;
+    border-radius: 8px;
+}
+
+.report-data p {
+    font-size: 16px;
+    color: var(--text-color);
+    margin: 15px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.report-data p span {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 18px;
+}
+
+.chart-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+    .reports-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .reports-content h2 {
+        font-size: 22px;
+    }
+
+    .report-selector {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .report-selector button {
+        font-size: 14px;
+        padding: 8px 15px;
+    }
+
+    .report-section h3 {
+        font-size: 18px;
+    }
+
+    .report-data p {
+        font-size: 14px;
+    }
+
+    .chart-container {
+        max-width: 300px;
+    }
+}
