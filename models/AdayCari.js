@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const adayCariSchema = new mongoose.Schema({
-    sube: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
+    sube: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" , required: [true, "Şube zorunlu!"]},
     adayKodu: { 
         type: Number, 
     },
@@ -11,9 +11,9 @@ const adayCariSchema = new mongoose.Schema({
         minlength: [3, "C/H Ünvanı en az 3 karakter olmalı!"]
     },
     adres: { type: String },
-    ulke: { type: mongoose.Schema.Types.ObjectId, ref: "Country" },
-    il: { type: mongoose.Schema.Types.ObjectId, ref: "City" },
-    ilce: { type: mongoose.Schema.Types.ObjectId, ref: "Town" },
+    ulke: { type: mongoose.Schema.Types.ObjectId, ref: "Country", required: [true, "Ülke zorunlu!"]},
+    il: { type: mongoose.Schema.Types.ObjectId, ref: "City", required: [true, "İl zorunlu!"]},
+    ilce: { type: mongoose.Schema.Types.ObjectId, ref: "Town", required: [true, "İlçe zorunlu!"]},
     sorumluPersonel: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
     yetkiliAdiSoyadi: { 
         type: String, 
@@ -40,8 +40,7 @@ const adayCariSchema = new mongoose.Schema({
     musteriHikayesi: { type: String },
     company: { 
         type: mongoose.Schema.Types.ObjectId, 
-        ref: "User", 
-        required: [true, "Şirket bilgisi zorunlu!"]
+        ref: "User"
     },
 }, { timestamps: true });
 
