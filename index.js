@@ -9,6 +9,7 @@ import userRoutes from "./routes/user.js";
 import statusRoutes from "./routes/status.js";
 import taskTypesRoutes from "./routes/taskTypes.js";
 import groupsRoutes from "./routes/groups.js";
+import rolesRouter from "./routes/roles.js";
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/status", statusRoutes);
 app.use("/api/taskTypes", taskTypesRoutes);
 app.use("/api/groups", groupsRoutes);
+app.use("/api/roles", rolesRouter);
 
 app.use((err, req, res, next) => {
     const errorStatus = err.status || 500;
