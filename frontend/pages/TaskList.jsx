@@ -74,13 +74,26 @@ const TaskList = () => {
     const handleEditTask = async () => {
         if (!editTask) return;
         try {
-            const response = await api.put(`/tasks/${editTask._id}`, editTask);
+            const taskToUpdate = {
+                description: editTask.description || "", // Boş olabilir, şema bunu kabul eder
+                completed: editTask.completed !== undefined ? editTask.completed : editTask.completed,
+                receiptType: editTask.receiptType?._id || undefined, // null yerine undefined
+                priority: editTask.priority?._id || undefined,
+                taskType: editTask.taskType?._id || undefined
+            };
+    
+            if (taskToUpdate.description && taskToUpdate.description.length < 3) {
+                throw new Error("Açıklama en az 3 karakter olmalı!");
+            }
+    
+            console.log("Sending update data:", taskToUpdate); // Gönderilen veriyi logla
+            const response = await api.put(`/tasks/${editTask._id}`, taskToUpdate);
             setTasks(tasks.map(task => task._id === editTask._id ? response.data : task));
             setEditTask(null);
             setShowPopup(false);
             setError(null);
         } catch (error) {
-            setError(error.response?.data?.message || "Görev düzenlenemedi.");
+            setError(error.response?.data?.message || error.message || "Görev düzenlenemedi.");
         }
     };
 
