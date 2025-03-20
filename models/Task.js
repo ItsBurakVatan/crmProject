@@ -20,10 +20,7 @@ const TaskSchema = new mongoose.Schema({
     relatedUser: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     relatedGroup: { type: mongoose.Schema.Types.ObjectId, ref: "Group" },
     completed: { type: Boolean, default: false },
-    description: { 
-        type: String, 
-        minlength: [3, "Açıklama en az 3 karakter olmalı!"]
-    }
+    description: { type: String}
 }, { timestamps: true });
 
 export default mongoose.model("Task", TaskSchema, "tasks");
