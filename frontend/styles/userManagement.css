@@ -136,6 +136,32 @@
     margin-bottom: 10px;
 }
 
+.user-management-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.user-management-filters {
+    display: flex;
+    gap: 10px;
+}
+
+.search-bar {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.role-filter {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
 /* Mobil Uyumluluk */
 @media (max-width: 768px) {
     .user-management-container {
