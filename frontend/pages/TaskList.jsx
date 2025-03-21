@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "./Navbar";
 import api from "../api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate , useLocation} from "react-router-dom";
 import useFetch from "../useFetch";
+import { AuthContext } from "../authContext";
 import "../styles/adayCariKartlari.css";
 
 const TaskList = () => {
@@ -15,17 +16,20 @@ const TaskList = () => {
     const [contextMenu, setContextMenu] = useState(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
+    const { user } = React.useContext(AuthContext);
     const [options, setOptions] = useState({
         receiptTypes: [],
         priorities: [],
         taskTypes: [],
     });
     const navigate = useNavigate();
+    const location = useLocation(); // location tanımlandı
 
     const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(`/tasks?page=${page}&limit=10`);
 
     useEffect(() => {
         if (data) {
+            console.log("Fetched Data:", data);
             setTasks(data.data || []);
             setTotalPages(data.pages || 1);
             setLoading(fetchLoading);
@@ -55,6 +59,14 @@ const TaskList = () => {
         fetchOptions();
     }, []);
 
+    useEffect(() => {
+        if (location.state?.refresh) {
+            console.log("Refreshing Task List...");
+            reFetch();
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location, reFetch, navigate]);
+
     const handleSearch = async (e) => {
         setSearchQuery(e.target.value);
         if (e.target.value) {
@@ -72,21 +84,26 @@ const TaskList = () => {
     };
 
     const handleEditTask = async () => {
+        if (user.role === "staff") {
+            setError("Bu işlem için yetkiniz yok!");
+            setTimeout(() => setError(null), 3000); // 3 saniye sonra mesajı kaldır
+            return;
+        }
         if (!editTask) return;
         try {
             const taskToUpdate = {
-                description: editTask.description || "", // Boş olabilir, şema bunu kabul eder
+                description: editTask.description || "",
                 completed: editTask.completed !== undefined ? editTask.completed : editTask.completed,
-                receiptType: editTask.receiptType?._id || undefined, // null yerine undefined
+                receiptType: editTask.receiptType?._id || undefined,
                 priority: editTask.priority?._id || undefined,
                 taskType: editTask.taskType?._id || undefined
             };
-    
+        
             if (taskToUpdate.description && taskToUpdate.description.length < 3) {
                 throw new Error("Açıklama en az 3 karakter olmalı!");
             }
-    
-            console.log("Sending update data:", taskToUpdate); // Gönderilen veriyi logla
+        
+            console.log("Sending update data:", taskToUpdate);
             const response = await api.put(`/tasks/${editTask._id}`, taskToUpdate);
             setTasks(tasks.map(task => task._id === editTask._id ? response.data : task));
             setEditTask(null);
@@ -243,14 +260,24 @@ const TaskList = () => {
             {contextMenu && (
                 <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
                     <div
-                        className="context-menu-item"
-                        onClick={() => { setEditTask(contextMenu.task); setShowPopup(true); setContextMenu(null); }}
+                        className={`context-menu-item ${user.role === "staff" ? "disabled" : ""}`}
+                        onClick={() => {
+                            if (user.role !== "staff") {
+                                setEditTask(contextMenu.task);
+                                setShowPopup(true);
+                                setContextMenu(null);
+                            }
+                        }}
                     >
                         Düzenle
                     </div>
                     <div
-                        className="context-menu-item delete"
-                        onClick={() => handleDeleteTask(contextMenu.task._id)}
+                        className={`context-menu-item delete ${user.role === "staff" ? "disabled" : ""}`}
+                        onClick={() => {
+                            if (user.role !== "staff") {
+                                handleDeleteTask(contextMenu.task._id);
+                            }
+                        }}
                     >
                         Sil
                     </div>
