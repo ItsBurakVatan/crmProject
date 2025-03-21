@@ -299,6 +299,17 @@
     text-align: center;
 }
 
+.context-menu-item.disabled {
+    color: #999; /* Gri renk */
+    cursor: not-allowed; /* Tıklanamaz imleç */
+    pointer-events: none; /* Tıklama olaylarını devre dışı bırak */
+    opacity: 0.6; /* Hafif soluk görünüm */
+}
+
+.context-menu-item.disabled:hover {
+    background-color: transparent; /* Hover efektini kaldır */
+}
+
 /* Mobil Uyumluluk */
 @media (max-width: 768px) {
     .aday-cari-header {
