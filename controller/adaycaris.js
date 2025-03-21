@@ -38,7 +38,8 @@ export const getAdayCaris = async (req, res, next) => {
 
         const filter = { company: req.params.companyId };
         if (req.user.role === "staff") {
-            filter.sorumluPersonel = req.user.id;
+            // Staff sadece kendi eklediği aday carileri görsün
+            filter.company = req.user.id; // company alanını kullanıcı ID'si ile filtrele
         }
 
         const total = await AdayCari.countDocuments(filter);
