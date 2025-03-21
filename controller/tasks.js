@@ -11,9 +11,11 @@ export const getTasks = async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         const tasksQuery = req.user.role === "staff" 
-            ? { createdBy: new mongoose.Types.ObjectId(req.user.id) }
+            ? { createdBy: req.user.id } // String olarak filtrele
             : {};
 
+        console.log("req.user.id:", req.user.id);
+        console.log("Tasks Query:", tasksQuery);
         const total = await mongoose.connection.db.collection("tasks").countDocuments(tasksQuery);
         const tasks = await mongoose.connection.db.collection("tasks")
             .aggregate([
@@ -37,6 +39,7 @@ export const getTasks = async (req, res, next) => {
             .limit(limit)
             .toArray();
 
+        console.log("Fetched Tasks:", tasks);
         res.status(200).json({
             data: tasks,
             total,
@@ -47,7 +50,6 @@ export const getTasks = async (req, res, next) => {
         next(createError(500, "Görevler alınamadı!", { error: err.message }));
     }
 };
-
 // Yeni Görev Oluşturma
 export const createTask = async (req, res, next) => {
     try {
@@ -57,7 +59,7 @@ export const createTask = async (req, res, next) => {
         const newTask = {
             ...req.body,
             taskNo: newTaskNo,
-            createdBy: req.user.id,
+            createdBy: new mongoose.Types.ObjectId(req.user.id), // Kullanıcı ID'sini doğru şekilde ekle
             adayCari: req.body.adayCari ? new mongoose.Types.ObjectId(req.body.adayCari) : null,
             receiptType: req.body.receiptType ? new mongoose.Types.ObjectId(req.body.receiptType) : null,
             priority: req.body.priority ? new mongoose.Types.ObjectId(req.body.priority) : null,
