@@ -55,6 +55,11 @@ const AdayCariKartlari = () => {
     const closeContextMenu = () => setContextMenu(null);
 
     const handleEditAdayCari = async () => {
+        if (user.role === "staff") {
+            setError("Bu işlem için yetkiniz yok!");
+            setTimeout(() => setError(null), 3000); // 3 saniye sonra mesajı kaldır
+            return;
+        }
         if (!editAdayCari) return;
         try {
             const response = await api.put(`/adaycaris/${editAdayCari._id}`, editAdayCari);
@@ -207,14 +212,24 @@ const AdayCariKartlari = () => {
             {contextMenu && (
                 <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
                     <div
-                        className="context-menu-item"
-                        onClick={() => { setEditAdayCari(contextMenu.aday); setShowPopup(true); setContextMenu(null); }}
+                        className={`context-menu-item ${user.role === "staff" ? "disabled" : ""}`}
+                        onClick={() => {
+                            if (user.role !== "staff") {
+                                setEditAdayCari(contextMenu.aday);
+                                setShowPopup(true);
+                                setContextMenu(null);
+                            }
+                        }}
                     >
                         Düzenle
                     </div>
                     <div
-                        className="context-menu-item delete"
-                        onClick={() => handleDeleteAdayCari(contextMenu.aday._id)}
+                        className={`context-menu-item delete ${user.role === "staff" ? "disabled" : ""}`}
+                        onClick={() => {
+                            if (user.role !== "staff") {
+                                handleDeleteAdayCari(contextMenu.aday._id);
+                            }
+                        }}
                     >
                         Sil
                     </div>
