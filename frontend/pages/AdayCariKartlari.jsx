@@ -3,7 +3,7 @@ import Navbar from "./Navbar";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../authContext";
 import useFetch from "../useFetch";
-import api from "../api"; // api dosyasını ekledik
+import api from "../api";
 import "../styles/adayCariKartlari.css";
 
 const AdayCariKartlari = () => {
@@ -19,10 +19,16 @@ const AdayCariKartlari = () => {
     const { user } = React.useContext(AuthContext);
     const navigate = useNavigate();
 
-    const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(`/adaycaris/${user?._id}?page=${page}&limit=10`);
+    // Kullanıcının rolüne göre dinamik URL belirle
+    const fetchUrl = user?.role === "admin" 
+        ? `/adaycaris?page=${page}&limit=10` 
+        : `/adaycaris/${user?._id}?page=${page}&limit=10`;
+
+    const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(fetchUrl);
 
     useEffect(() => {
         if (data) {
+            console.log("Fetched Data:", data); // Dönen veriyi logla
             setAdayCaris(data.data || []);
             setTotalPages(data.pages || 1);
             setLoading(fetchLoading);
@@ -36,8 +42,13 @@ const AdayCariKartlari = () => {
         setSearchQuery(e.target.value);
         if (e.target.value) {
             try {
-                const response = await api.get(`/adaycaris/search/${user?._id}?query=${e.target.value}`);
-                setAdayCaris(response.data);
+                // Arama için de role göre URL belirle
+                const searchUrl = user?.role === "admin" 
+                    ? `/adaycaris/search?query=${e.target.value}&page=${page}&limit=10`
+                    : `/adaycaris/search/${user?._id}?query=${e.target.value}`;
+                const response = await api.get(searchUrl);
+                setAdayCaris(response.data.data || response.data);
+                setTotalPages(response.data.pages || 1);
                 setError(null);
             } catch (error) {
                 setError("Arama sırasında hata oluştu: " + error.message);
@@ -57,7 +68,7 @@ const AdayCariKartlari = () => {
     const handleEditAdayCari = async () => {
         if (user.role === "staff") {
             setError("Bu işlem için yetkiniz yok!");
-            setTimeout(() => setError(null), 3000); // 3 saniye sonra mesajı kaldır
+            setTimeout(() => setError(null), 3000);
             return;
         }
         if (!editAdayCari) return;
