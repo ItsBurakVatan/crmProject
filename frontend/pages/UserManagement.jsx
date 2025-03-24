@@ -22,7 +22,9 @@ const UserManagement = () => {
     );
 
     useEffect(() => {
+        console.log("Fetch URL:", `/users?page=${page}&limit=10${searchQuery ? `&search=${searchQuery}` : ""}${roleFilter ? `&role=${roleFilter}` : ""}`);
         if (data) {
+            console.log("Backend'den gelen veri:", data); // Dönen veriyi logla
             setUsers(data.data || []);
             setTotalPages(data.pages || 1);
             setLoading(fetchLoading);
@@ -81,6 +83,13 @@ const UserManagement = () => {
         setContextMenu({ x: e.pageX, y: e.pageY, user });
     };
 
+    const handleRoleFilterChange = (e) => {
+        const newRole = e.target.value;
+        console.log("Yeni Rol Filtresi:", newRole); // State'in güncellendiğini kontrol et
+        setRoleFilter(newRole);
+        setPage(1); // Filtre değiştiğinde sayfayı 1'e sıfırla
+    };
+
     const closeContextMenu = () => setContextMenu(null);
 
     return (
@@ -100,7 +109,7 @@ const UserManagement = () => {
                             />
                             <select
                                 value={roleFilter}
-                                onChange={(e) => setRoleFilter(e.target.value)}
+                                onChange={handleRoleFilterChange} // Yeni fonksiyonu kullan
                                 className="role-filter"
                             >
                                 <option value="">Tüm Roller</option>
