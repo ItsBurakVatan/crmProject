@@ -7,14 +7,14 @@ export const createAdayCari = async (req, res, next) => {
         const lastAday = await AdayCari.findOne({}, {}, { sort: { adayKodu: -1 } });
         const newAdayKodu = lastAday ? lastAday.adayKodu + 1 : 1;
 
-        console.log("Gelen veri:", req.body); // Gelen veriyi logla
+        console.log("Gelen veri:", req.body);
 
         const newAdayCari = new AdayCari({
             ...req.body,
             adayKodu: newAdayKodu,
         });
         const savedAdayCari = await newAdayCari.save();
-        console.log("Kaydedilen veri:", savedAdayCari); // Başarılı kaydı logla
+        console.log("Kaydedilen veri:", savedAdayCari);
         res.status(201).json(savedAdayCari);
     } catch (err) {
         if (err.name === "ValidationError") {
@@ -22,10 +22,10 @@ export const createAdayCari = async (req, res, next) => {
                 field: key,
                 message: err.errors[key].message
             }));
-            console.log("Doğrulama hatası:", errors); // Hata detaylarını logla
+            console.log("Doğrulama hatası:", errors);
             return next(createError(400, "Geçersiz veri!", { details: errors }));
         }
-        console.error("Genel hata:", err); // Diğer hataları logla
+        console.error("Genel hata:", err);
         next(createError(500, "Aday cari oluşturulamadı!", { error: err.message }));
     }
 };
@@ -36,13 +36,22 @@ export const getAdayCaris = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const filter = { company: req.params.companyId };
-        if (req.user.role === "staff") {
-            // Staff sadece kendi eklediği aday carileri görsün
-            filter.company = req.user.id; // company alanını kullanıcı ID'si ile filtrele
+        let filter = {};
+        let total;
+
+        // Eğer companyId varsa (staff veya belirli bir kullanıcı için)
+        if (req.params.companyId) {
+            filter.company = req.params.companyId;
+            if (req.user.role === "staff") {
+                // Staff sadece kendi eklediği aday carileri görsün
+                filter.company = req.user.id;
+            }
+            total = await AdayCari.countDocuments(filter);
+        } else {
+            // companyId yoksa (admin için tüm cariler)
+            total = await AdayCari.countDocuments();
         }
 
-        const total = await AdayCari.countDocuments(filter);
         const adayCaris = await AdayCari.find(filter)
             .populate("ulke")
             .populate("il")
@@ -54,6 +63,8 @@ export const getAdayCaris = async (req, res, next) => {
             .skip(skip)
             .limit(limit);
 
+        console.log("Getirilen Aday Cariler:", adayCaris); // Dönen veriyi logla
+
         res.status(200).json({
             data: adayCaris,
             total,
@@ -61,6 +72,7 @@ export const getAdayCaris = async (req, res, next) => {
             pages: Math.ceil(total / limit)
         });
     } catch (err) {
+        console.error("Hata:", err.message);
         next(createError(500, "Aday cariler alınamadı!", { error: err.message }));
     }
 };
