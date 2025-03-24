@@ -21,6 +21,29 @@ const validateAdayCari = (req, res, next) => {
     next();
 };
 
+// Tüm aday carileri listele (admin için)
+router.get("/", authorize("admin"), async (req, res) => {
+    try {
+        const { page = 1, limit = 10 } = req.query;
+        console.log("Fetching all aday caris:", { page, limit }); // Log ekle
+        const total = await AdayCari.countDocuments();
+        const adayCaris = await AdayCari.find()
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit))
+            .populate("sube durumu ulke il ilce sorumluPersonel cariHesapGrubu");
+        console.log("Filtrelenmiş Aday Cariler:", adayCaris); // Dönen veriyi logla
+        res.status(200).json({ 
+            data: adayCaris, 
+            total, 
+            page: parseInt(page), 
+            pages: Math.ceil(total / limit) 
+        });
+    } catch (err) {
+        console.error("Hata:", err.message);
+        res.status(500).json({ message: "Aday cariler alınamadı!", error: err.message });
+    }
+});
+
 // Sabit rotalar
 router.get("/branchs", async (req, res) => {
     try {
@@ -155,7 +178,6 @@ router.get("/:companyId/status-report", verifyToken, async (req, res, next) => {
             return res.status(400).json({ message: "Geçersiz companyId" });
         }
 
-        // Status modelinden durumları çek
         const statuses = await Status.find({
             name: { $in: ["Potansiyel", "Keşif Bekleyen", "Olumsuz"] }
         });
@@ -178,7 +200,7 @@ router.get("/:companyId/status-report", verifyToken, async (req, res, next) => {
             });
         }
 
-        console.log("AdayCaris:", caris); // Debugging için
+        console.log("AdayCaris:", caris);
 
         const potential = caris.filter(cari => 
             cari.durumu && cari.durumu._id.toString() === statusMap["Potansiyel"].toString()
@@ -199,7 +221,7 @@ router.get("/:companyId/status-report", verifyToken, async (req, res, next) => {
 
 // Parametreli rotalar
 router.get("/:companyId", authorize("admin", "manager", "staff"), getAdayCaris);
-router.post("/", authorize("admin", "manager"), validateAdayCari, createAdayCari);
+router.post("/", authorize("admin", "manager", "staff"), validateAdayCari, createAdayCari);
 router.put("/:id", authorize("admin", "manager"), updateAdayCari);
 router.delete("/:id", authorize("admin"), deleteAdayCari);
 
