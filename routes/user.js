@@ -1,5 +1,5 @@
 import express from "express";
-import { register, login, getUsers, updateUserRole } from "../controllers/user.js";
+import { register, login, updateUserRole } from "../controllers/user.js"; // getUsers'ı kaldırdım
 import { authorize, verifyToken } from "../middleware/auth.js";
 import User from "../models/User.js";
 import Task from "../models/Task.js";
@@ -12,22 +12,25 @@ const router = express.Router();
 
 router.post("/register", register);
 router.post("/login", login);
-router.get("/", authorize("admin"), getUsers);
 router.put("/:id/role", authorize("admin"), updateUserRole);
 
 router.get("/", authorize("admin"), async (req, res) => {
     try {
         const { page = 1, limit = 10, search, role } = req.query;
+        console.log("Backend Query:", { page, limit, search, role }); // Gelen parametreleri logla
         const query = {};
         if (search) query.$or = [{ username: new RegExp(search, "i") }, { email: new RegExp(search, "i") }];
         if (role) query.role = role;
 
+        console.log("MongoDB Query:", query); // MongoDB'ye gönderilen sorguyu logla
         const total = await User.countDocuments(query);
         const users = await User.find(query)
             .skip((page - 1) * limit)
             .limit(parseInt(limit));
+        console.log("Filtrelenmiş Kullanıcılar:", users); // Dönen kullanıcıları logla
         res.status(200).json({ data: users, total, page, pages: Math.ceil(total / limit) });
     } catch (err) {
+        console.error("Hata:", err.message);
         res.status(500).json({ message: "Kullanıcılar alınamadı!", error: err.message });
     }
 });
@@ -66,7 +69,7 @@ router.get("/:id/details", authorize("admin"), async (req, res) => {
         console.log("Activity Count:", activityCount);
 
         const adayCariCount = await AdayCari.countDocuments({ 
-            company: new mongoose.Types.ObjectId(req.params.id) // company alanını kullan
+            company: new mongoose.Types.ObjectId(req.params.id)
         });
         console.log("Aday Cari Count:", adayCariCount);
 
