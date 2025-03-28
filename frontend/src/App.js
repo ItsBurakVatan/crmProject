@@ -15,7 +15,6 @@ import UserGroups from "./pages/UserGroups";
 import UserManagement from "./pages/UserManagement";    
 import Reports from "./pages/Reports";
 
-
 function App() {
     const { user } = useContext(AuthContext);
 
@@ -42,7 +41,6 @@ function App() {
                 <Route path="/reports/tasks" element={<ProtectedRoute><Reports reportType="tasks" /></ProtectedRoute>} />
                 <Route path="/reports/users" element={<ProtectedRoute><Reports reportType="users" /></ProtectedRoute>} />
                 <Route path="/reports/customer-status" element={<ProtectedRoute><Reports reportType="customer-status" /></ProtectedRoute>} />
-
             </Routes>
         </BrowserRouter>
     );
