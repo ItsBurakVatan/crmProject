@@ -19,22 +19,20 @@ const AdayCariKartlari = () => {
     const { user } = React.useContext(AuthContext);
     const navigate = useNavigate();
 
-    // Kullanıcının rolüne göre dinamik URL belirle
-    const fetchUrl = user?.role === "admin" 
-        ? `/adaycaris?page=${page}&limit=10` 
+    const fetchUrl = user?.role === "admin"
+        ? `/adaycaris?page=${page}&limit=10`
         : `/adaycaris/${user?._id}?page=${page}&limit=10`;
 
     const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(fetchUrl);
 
     useEffect(() => {
         if (data) {
-            console.log("Fetched Data:", data); // Dönen veriyi logla
             setAdayCaris(data.data || []);
             setTotalPages(data.pages || 1);
             setLoading(fetchLoading);
             setError(fetchError ? fetchError.message : null);
         } else if (fetchError) {
-            setError("Veri yüklenemedi: " + (fetchError.message || "Yetkisiz erişim!"));
+            setError(fetchError.response?.data?.message || "Veri yüklenemedi: Bağlantı hatası veya yetkisiz erişim!");
         }
     }, [data, fetchLoading, fetchError]);
 
@@ -42,8 +40,7 @@ const AdayCariKartlari = () => {
         setSearchQuery(e.target.value);
         if (e.target.value) {
             try {
-                // Arama için de role göre URL belirle
-                const searchUrl = user?.role === "admin" 
+                const searchUrl = user?.role === "admin"
                     ? `/adaycaris/search?query=${e.target.value}&page=${page}&limit=10`
                     : `/adaycaris/search/${user?._id}?query=${e.target.value}`;
                 const response = await api.get(searchUrl);
@@ -55,6 +52,23 @@ const AdayCariKartlari = () => {
             }
         } else {
             reFetch();
+        }
+    };
+
+    const handleSyncRota = async () => {
+        try {
+            await api.get("/adaycaris/sync-rota", {
+                params: {
+                    company_id: user.company,
+                    user_id: user._id,
+                }
+            });
+            reFetch();
+            setError(null);
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || "Rota Cloud ile senkronizasyon başarısız. Bağlantıyı kontrol edin.";
+            setError(errorMessage);
+            setTimeout(() => setError(null), 5000); // 5 saniye sonra hata mesajı kaybolur
         }
     };
 
@@ -108,6 +122,11 @@ const AdayCariKartlari = () => {
                 <button className="add-aday-cari-btn" onClick={() => navigate("/create-aday-cari")}>
                     + Yeni Aday Cari Kartı
                 </button>
+                {user?.role === "admin" && (
+                    <button className="sync-rota-btn" onClick={handleSyncRota}>
+                        Rota Cloud ile Senkronize Et
+                    </button>
+                )}
             </div>
             <div className="aday-cari-container">
                 {error && <div className="error-message">{error}</div>}
@@ -115,30 +134,15 @@ const AdayCariKartlari = () => {
                     <table className="aday-cari-table">
                         <thead>
                             <tr>
-                                <th>Aday Kodu</th>
-                                <th>C/H Ünvanı</th>
-                                <th>Yetkili Adı Soyadı</th>
-                                <th>Yetkili Görevi</th>
-                                <th>Yetkili Telefon</th>
-                                <th>Yetkili Email</th>
-                                <th>Vergi Dairesi</th>
-                                <th>Vergi No</th>
-                                <th>TC Kimlik No</th>
-                                <th>Durumu</th>
-                                <th>Şube</th>
-                                <th>Sorumlu Personel</th>
-                                <th>Ülke</th>
-                                <th>İl</th>
-                                <th>İlçe</th>
-                                <th>Adres</th>
-                                <th>Açıklama</th>
-                                <th>Müşteri Hikayesi</th>
-                                <th>Cari Hesap Grubu</th>
+                                <th>Aday Kodu</th><th>C/H Ünvanı</th><th>Yetkili Adı Soyadı</th><th>Yetkili Görevi</th><th>Yetkili Telefon</th>
+                                <th>Yetkili Email</th><th>Vergi Dairesi</th><th>Vergi No</th><th>TC Kimlik No</th><th>Durumu</th>
+                                <th>Şube</th><th>Sorumlu Personel</th><th>Ülke</th><th>İl</th><th>İlçe</th><th>Adres</th>
+                                <th>Açıklama</th><th>Müşteri Hikayesi</th><th>Cari Hesap Grubu</th><th>Şehir (Rota)</th><th>Posta Kodu (Rota)</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
-                                <tr><td colSpan="19">Yükleniyor...</td></tr>
+                                <tr><td colSpan="21">Yükleniyor...</td></tr>
                             ) : adayCaris.length > 0 ? (
                                 adayCaris.map((aday) => (
                                     <tr key={aday._id} onContextMenu={(e) => handleContextMenu(e, aday)}>
@@ -161,10 +165,12 @@ const AdayCariKartlari = () => {
                                         <td data-label="Açıklama">{aday.aciklama || "-"}</td>
                                         <td data-label="Müşteri Hikayesi">{aday.musteriHikayesi || "-"}</td>
                                         <td data-label="Cari Hesap Grubu">{aday.cariHesapGrubu?.name || "-"}</td>
+                                        <td data-label="Şehir (Rota)">{aday.city || "-"}</td>
+                                        <td data-label="Posta Kodu (Rota)">{aday.zip || "-"}</td>
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="19">Henüz aday cari kartı yok.</td></tr>
+                                <tr><td colSpan="21">Henüz aday cari kartı yok.</td></tr>
                             )}
                         </tbody>
                     </table>
