@@ -5,6 +5,7 @@ import { useNavigate , useLocation} from "react-router-dom";
 import useFetch from "../useFetch";
 import { AuthContext } from "../authContext";
 import "../styles/adayCariKartlari.css";
+import debounce from "lodash/debounce"; // lodash debounce eklendi
 
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
@@ -23,13 +24,12 @@ const TaskList = () => {
         taskTypes: [],
     });
     const navigate = useNavigate();
-    const location = useLocation(); // location tanımlandı
+    const location = useLocation(); 
 
     const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(`/tasks?page=${page}&limit=10`);
 
     useEffect(() => {
         if (data) {
-            console.log("Fetched Data:", data);
             setTasks(data.data || []);
             setTotalPages(data.pages || 1);
             setLoading(fetchLoading);
@@ -61,17 +61,15 @@ const TaskList = () => {
 
     useEffect(() => {
         if (location.state?.refresh) {
-            console.log("Refreshing Task List...");
             reFetch();
             navigate(location.pathname, { replace: true, state: {} });
         }
     }, [location, reFetch, navigate]);
 
-    const handleSearch = async (e) => {
-        setSearchQuery(e.target.value);
-        if (e.target.value) {
+    const debouncedSearch = debounce(async (query) => {
+        if (query) {
             try {
-                const response = await api.get(`/tasks/search?query=${e.target.value}&page=${page}&limit=10`);
+                const response = await api.get(`/tasks/search?query=${query}&page=${page}&limit=10`);
                 setTasks(response.data.data);
                 setTotalPages(response.data.pages);
                 setError(null);
@@ -81,6 +79,11 @@ const TaskList = () => {
         } else {
             reFetch();
         }
+    }, 300); // 300ms gecikme
+
+    const handleSearch = (e) => {
+        setSearchQuery(e.target.value);
+        debouncedSearch(e.target.value);
     };
 
     const handleEditTask = async () => {
