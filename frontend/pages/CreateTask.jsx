@@ -27,33 +27,36 @@ const CreateTask = () => {
         users: [],
         groups: [],
     });
+    const [page, setPage] = useState(1); // Pagination için
+    const [totalPages, setTotalPages] = useState(1);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchOptions = async () => {
             try {
                 const [adayCaris, receiptTypes, priorities, taskTypes, users, groups] = await Promise.all([
-                    api.get(`/adaycaris/${JSON.parse(localStorage.getItem("user"))?._id}`),
-                    api.get("/tasks/receiptTypes"),
-                    api.get("/tasks/priorities"),
-                    api.get("/tasks/taskTypes"),
-                    api.get("/tasks/users"),
-                    api.get("/tasks/groups"),
+                    api.get(`/adaycaris/${JSON.parse(localStorage.getItem("user"))?._id}?page=${page}&limit=10`),
+                    api.get(`/tasks/receiptTypes?page=${page}&limit=10`),
+                    api.get(`/tasks/priorities?page=${page}&limit=10`),
+                    api.get(`/tasks/taskTypes?page=${page}&limit=10`),
+                    api.get(`/tasks/users?page=${page}&limit=10`),
+                    api.get(`/tasks/groups?page=${page}&limit=10`),
                 ]);
                 setOptions({
                     adayCaris: adayCaris.data.data,
-                    receiptTypes: receiptTypes.data,
-                    priorities: priorities.data,
-                    taskTypes: taskTypes.data,
-                    users: users.data,
-                    groups: groups.data,
+                    receiptTypes: receiptTypes.data.data,
+                    priorities: priorities.data.data,
+                    taskTypes: taskTypes.data.data,
+                    users: users.data.data,
+                    groups: groups.data.data,
                 });
+                setTotalPages(adayCaris.data.pages || 1); // Örnek olarak adayCaris’in sayfalarını kullanıyoruz
             } catch (error) {
-                setErrors({ submit: "Seçenekler yüklenemedi: " + (error.response?.data?.message || "Yetkisiz erişim!") });
+                setErrors({ submit: error.response?.data?.message || "Seçenekler yüklenemedi!" });
             }
         };
         fetchOptions();
-    }, []);
+    }, [page]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -172,6 +175,11 @@ const CreateTask = () => {
                         <label>Açıklama</label>
                         <textarea name="description" value={task.description} onChange={handleChange}></textarea>
                         {errors.description && <span className="error">{errors.description}</span>}
+                    </div>
+                    <div className="pagination">
+                        <button onClick={() => setPage(page - 1)} disabled={page === 1}>Önceki</button>
+                        <span>Sayfa {page} / {totalPages}</span>
+                        <button onClick={() => setPage(page + 1)} disabled={page === totalPages}>Sonraki</button>
                     </div>
                     {errors.submit && <div className="error-message">{errors.submit}</div>}
                     <div className="button-group">
