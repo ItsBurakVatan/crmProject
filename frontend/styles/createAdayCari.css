@@ -65,6 +65,22 @@
     resize: vertical;
 }
 
+/* Zip input’u için özel stil (gerekirse farklı bir genişlik veya hizalama yapılabilir) */
+.input-group input#zip {
+    width: 100%; /* Diğer input’larla aynı genişlik */
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.input-group input#zip:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
+}
+
 .button-group {
     display: flex;
     gap: 10px;
@@ -117,16 +133,15 @@
     color: white;
     border-radius: 5px;
     z-index: 1000;
-    max-width: 300px; /* Pop-up'ın maksimum genişliğini sınırlıyoruz */
-    width: auto; /* İçeriğe göre genişlik */
-    box-shadow: var(--shadow); /* Hafif gölge ekleyerek öne çıkmasını sağlıyoruz */
+    max-width: 300px;
+    width: auto;
+    box-shadow: var(--shadow);
     font-size: 16px;
     text-align: center;
-    opacity: 0; /* Başlangıçta görünmez */
-    animation: fadeInOut 3s ease-in-out forwards; /* Açılıp kapanma animasyonu */
+    opacity: 0;
+    animation: fadeInOut 3s ease-in-out forwards;
 }
 
-/* Başarı ve hata durumları için renkler */
 .popup.success {
     background-color: var(--primary-color);
 }
@@ -135,7 +150,6 @@
     background-color: var(--danger-color);
 }
 
-/* Animasyon tanımı */
 @keyframes fadeInOut {
     0% { opacity: 0; transform: translateY(-20px); }
     10% { opacity: 1; transform: translateY(0); }
@@ -168,34 +182,33 @@
     color: white;
 }
 
-/* Textbox altındaki hata mesajları */
 .error {
     color: var(--danger-color);
-    font-size: 0.85em; /* .general-error ile aynı (0.65em -> 0.85em) */
-    margin-top: 8px; /* .general-error ile aynı (2px -> 8px) */
+    font-size: 0.85em;
+    margin-top: 8px;
     display: block;
-    font-weight: 400; /* Zaten aynı */
+    font-weight: 400;
     background-color: #ffe6e6;
-    padding: 3px 6px; /* .general-error ile aynı (0px 2px -> 3px 6px) */
-    border-radius: 20px; /* .general-error ile aynı (2px -> 3px) */
+    padding: 3px 6px;
+    border-radius: 20px;
 }
 
 .input-group input.error-border,
 .input-group select.error-border,
-.input-group textarea.error-border {
+.input-group textarea.error-border,
+.input-group input#zip.error-border {
     border-color: var(--danger-color);
 }
 
-/* Buton altındaki genel hata mesajı */
 .general-error {
     color: var(--danger-color);
-    font-size: 0.85em; 
-    margin-top: 8px; 
+    font-size: 0.85em;
+    margin-top: 8px;
     text-align: center;
     font-weight: 400;
     background-color: #ffe6e6;
-    padding: 3px 6px; 
-    border-radius: 20px; 
+    padding: 3px 6px;
+    border-radius: 20px;
 }
 
 /* Mobil Uyumluluk */
@@ -224,7 +237,8 @@
 
     .input-group input,
     .input-group select,
-    .input-group textarea {
+    .input-group textarea,
+    .input-group input#zip {
         font-size: 14px;
         padding: 8px;
     }
@@ -247,7 +261,7 @@
     .popup {
         top: 10px;
         right: 10px;
-        max-width: 90%; /* Mobilde ekranın tamamını kaplamasın */
+        max-width: 90%;
         font-size: 14px;
         padding: 10px 15px;
     }
@@ -260,12 +274,12 @@
 
     .error {
         font-size: 0.75em;
-        margin-top: 6px; 
-        padding: 2px 4px; 
+        margin-top: 6px;
+        padding: 2px 4px;
     }
 
     .general-error {
-        font-size: 0.75em; /* Mobilde daha da küçült (0.85em -> 0.75em) */
+        font-size: 0.75em;
         margin-top: 6px;
         padding: 2px 4px;
     }
