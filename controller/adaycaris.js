@@ -1,33 +1,28 @@
 import mongoose from "mongoose";
 import AdayCari from "../models/AdayCari.js";
-import { createError } from "../error.js";
+import Country from "../models/countries.js";
+import City from "../models/cities.js";
+import Town from "../models/Town.js";
+import { ApiError } from "../error.js"; // Yeni ApiError import edildi
+import { getCariHesapList, addCariHesap } from "../services/rotaCloudService.js";
+import logger from "../utils/logger.js"; // Logger eklendi
 
-export const createAdayCari = async (req, res, next) => {
-    try {
-        const lastAday = await AdayCari.findOne({}, {}, { sort: { adayKodu: -1 } });
-        const newAdayKodu = lastAday ? lastAday.adayKodu + 1 : 1;
+const findCountryIdByName = async (name) => {
+    if (!name) return null;
+    const country = await Country.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") } });
+    return country?._id || null;
+};
 
-        console.log("Gelen veri:", req.body);
+const findCityIdByName = async (name, countryId) => {
+    if (!name || !countryId) return null;
+    const city = await City.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") }, country: countryId });
+    return city?._id || null;
+};
 
-        const newAdayCari = new AdayCari({
-            ...req.body,
-            adayKodu: newAdayKodu,
-        });
-        const savedAdayCari = await newAdayCari.save();
-        console.log("Kaydedilen veri:", savedAdayCari);
-        res.status(201).json(savedAdayCari);
-    } catch (err) {
-        if (err.name === "ValidationError") {
-            const errors = Object.keys(err.errors).map(key => ({
-                field: key,
-                message: err.errors[key].message
-            }));
-            console.log("Doğrulama hatası:", errors);
-            return next(createError(400, "Geçersiz veri!", { details: errors }));
-        }
-        console.error("Genel hata:", err);
-        next(createError(500, "Aday cari oluşturulamadı!", { error: err.message }));
-    }
+const findTownIdByName = async (name, cityId) => {
+    if (!name || !cityId) return null;
+    const town = await Town.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") }, city: cityId });
+    return town?._id || null;
 };
 
 export const getAdayCaris = async (req, res, next) => {
@@ -39,20 +34,17 @@ export const getAdayCaris = async (req, res, next) => {
         let filter = {};
         let total;
 
-        // Eğer companyId varsa (staff veya belirli bir kullanıcı için)
         if (req.params.companyId) {
             filter.company = req.params.companyId;
             if (req.user.role === "staff") {
-                // Staff sadece kendi eklediği aday carileri görsün
-                filter.company = req.user.id;
+                filter.sorumluPersonel = req.user.id;
             }
             total = await AdayCari.countDocuments(filter);
         } else {
-            // companyId yoksa (admin için tüm cariler)
             total = await AdayCari.countDocuments();
         }
 
-        const adayCaris = await AdayCari.find(filter)
+        const localAdayCaris = await AdayCari.find(filter)
             .populate("ulke")
             .populate("il")
             .populate("ilce")
@@ -63,17 +55,132 @@ export const getAdayCaris = async (req, res, next) => {
             .skip(skip)
             .limit(limit);
 
-        console.log("Getirilen Aday Cariler:", adayCaris); // Dönen veriyi logla
+        let rotaCaris = null;
+        try {
+            rotaCaris = await getCariHesapList({
+                filter: "ALL",
+                company_id: "2",
+                user_id: "9",
+                branch_id: localAdayCaris
+                    .map((cari) => cari.sube?._id?.toString())
+                    .filter((id) => id !== undefined && id !== null),
+                limit: `${skip},${limit}`,
+            });
+        } catch (rotaErr) {
+            logger.error("Rota Cloud’dan veri alınamadı:", rotaErr.message);
+        }
 
+        const mergedCaris = [...localAdayCaris];
+        if (rotaCaris?.result) {
+            for (const rotaCari of rotaCaris.result) {
+                const exists = await AdayCari.findOne({ chUnvani: rotaCari.account });
+                if (!exists) {
+                    const countryId = await findCountryIdByName(rotaCari.country);
+                    const cityId = await findCityIdByName(rotaCari.city, countryId);
+                    const townId = await findTownIdByName(rotaCari.state, cityId);
+
+                    const newCari = new AdayCari({
+                        adayKodu: rotaCari.code ? parseInt(rotaCari.code) : (await AdayCari.countDocuments()) + 1,
+                        chUnvani: rotaCari.account,
+                        adres: rotaCari.address,
+                        yetkiliAdiSoyadi: rotaCari.yetkililer?.[0]?.name,
+                        yetkiliGorevi: rotaCari.yetkililer?.[0]?.title,
+                        yetkiliTelefon: rotaCari.phone,
+                        yetkiliEmail: rotaCari.email,
+                        vergiDairesi: rotaCari.vdairesi,
+                        vergiNo: rotaCari.vkn,
+                        tcKimlikNo: rotaCari.tckn,
+                        aciklama: rotaCari.notes,
+                        company: req.params.companyId || req.user.company,
+                        sube: rotaCari.subeid?.[0],
+                        ulke: countryId,
+                        il: cityId,
+                        ilce: townId,
+                        synced: true,
+                    });
+                    await newCari.save();
+                    mergedCaris.push(newCari);
+                }
+            }
+        }
+
+        logger.info(`Aday cariler alındı: Toplam ${mergedCaris.length} kayıt, Sayfa: ${page}`);
         res.status(200).json({
-            data: adayCaris,
-            total,
+            data: mergedCaris.slice(skip, skip + limit),
+            total: mergedCaris.length,
             page,
-            pages: Math.ceil(total / limit)
+            pages: Math.ceil(mergedCaris.length / limit),
         });
     } catch (err) {
-        console.error("Hata:", err.message);
-        next(createError(500, "Aday cariler alınamadı!", { error: err.message }));
+        next(ApiError.internal(err.message || "Aday cariler alınamadı!", { error: err.message }));
+    }
+};
+
+export const createAdayCari = async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+        const adayCariData = req.body;
+
+        const existingCari = await AdayCari.findOne({ adayKodu: adayCariData.adayKodu });
+        if (existingCari) {
+            throw ApiError.badRequest(`Aday kodu ${adayCariData.adayKodu} zaten kullanılıyor.`);
+        }
+
+        const newAdayCari = new AdayCari({
+            ...adayCariData,
+            company: adayCariData.company || "67d95e0e5b7d53eb87c05938",
+            synced: false,
+        });
+
+        const savedAdayCari = await newAdayCari.save({ session });
+        logger.info("Yerel veritabanına kaydedildi:", savedAdayCari._id);
+
+        const cariData = {
+            user_id: "9",
+            account: savedAdayCari.chUnvani,
+            code: savedAdayCari.adayKodu?.toString(),
+            phone: savedAdayCari.yetkiliTelefon || "",
+            email: savedAdayCari.yetkiliEmail || "",
+            address: savedAdayCari.adres || "Varsayılan Adres",
+            city: "İzmir",
+            state: "Tire",
+            country: "Türkiye",
+            vdairesi: savedAdayCari.vergiDairesi || "Varsayılan Vergi Dairesi",
+            vkn: savedAdayCari.vergiNo || "1234567890",
+            tckn: savedAdayCari.tcKimlikNo || "",
+            notes: savedAdayCari.aciklama || "",
+            firmaid: "2",
+            subeid: ["1"],
+            yetkililer: savedAdayCari.yetkiliAdiSoyadi
+                ? [{ name: savedAdayCari.yetkiliAdiSoyadi, title: savedAdayCari.yetkiliGorevi || "" }]
+                : [],
+        };
+
+        logger.info("Rota Cloud’a veri hazırlanır:", cariData.account);
+        const rotaResponse = await addCariHesap(cariData);
+
+        if (rotaResponse.message !== "Chk was created." || !rotaResponse.result?.startsWith("2")) {
+            throw ApiError.internal(`Rota Cloud ekleme başarısız: Beklenmeyen yanıt - ${JSON.stringify(rotaResponse)}`);
+        }
+
+        await AdayCari.updateOne(
+            { _id: savedAdayCari._id },
+            { $set: { synced: true } },
+            { session }
+        );
+
+        await session.commitTransaction();
+        res.status(201).json(savedAdayCari);
+    } catch (error) {
+        await session.abortTransaction();
+        logger.error("Rota Cloud’a ekleme başarısız:", { message: error.message, stack: error.stack });
+        res.status(error.statusCode || 500).json({
+            message: error.message || "Rota Cloud’a cari eklenemedi",
+            details: error.details || [],
+        });
+    } finally {
+        session.endSession();
     }
 };
 
@@ -81,26 +188,65 @@ export const updateAdayCari = async (req, res, next) => {
     try {
         const updatedAdayCari = await AdayCari.findByIdAndUpdate(
             req.params.id,
-            { $set: req.body },
+            { $set: { ...req.body, synced: false } },
             { new: true }
-        ).populate("ulke").populate("il").populate("ilce").populate("sube")
-         .populate("sorumluPersonel").populate("durumu").populate("cariHesapGrubu");
+        )
+            .populate("ulke")
+            .populate("il")
+            .populate("ilce")
+            .populate("sube")
+            .populate("sorumluPersonel")
+            .populate("durumu")
+            .populate("cariHesapGrubu");
+
         if (!updatedAdayCari) {
-            return next(createError(404, "Güncellenecek aday cari bulunamadı!"));
+            throw ApiError.notFound("Güncellenecek aday cari bulunamadı!");
         }
+
+        const cariData = {
+            user_id: "9",
+            account: updatedAdayCari.chUnvani, // savedAdayCari yerine updatedAdayCari
+            code: updatedAdayCari.adayKodu?.toString(),
+            phone: updatedAdayCari.yetkiliTelefon || "",
+            email: updatedAdayCari.yetkiliEmail || "",
+            address: updatedAdayCari.adres || "Varsayılan Adres",
+            city: updatedAdayCari.il?.name || "İzmir", // Populate edilmişse name kullanılır
+            state: updatedAdayCari.ilce?.name || "Tire",
+            country: updatedAdayCari.ulke?.name || "Türkiye",
+            vdairesi: updatedAdayCari.vergiDairesi || "Varsayılan Vergi Dairesi",
+            vkn: updatedAdayCari.vergiNo || "1234567890",
+            tckn: updatedAdayCari.tcKimlikNo || "",
+            notes: updatedAdayCari.aciklama || "",
+            firmaid: "2",
+            subeid: ["1"],
+            yetkililer: updatedAdayCari.yetkiliAdiSoyadi
+                ? [{ name: updatedAdayCari.yetkiliAdiSoyadi, title: updatedAdayCari.yetkiliGorevi || "" }]
+                : [],
+        };
+
+        logger.info("Rota Cloud’a güncelleme verisi hazırlanır:", cariData.account);
+        const rotaResponse = await addCariHesap(cariData); // Not: Bu aslında bir güncelleme olmalı, add yerine update kullanılabilir
+
+        // Rota Cloud yanıtını kontrol et
+        if (rotaResponse.message !== "Chk was created." && !["201", "202", "204"].includes(rotaResponse.result)) {
+            throw ApiError.internal(`Rota Cloud güncelleme başarısız: Beklenmeyen yanıt - ${JSON.stringify(rotaResponse)}`);
+        }
+
+        await AdayCari.updateOne({ _id: updatedAdayCari._id }, { $set: { synced: true } });
+
         res.status(200).json(updatedAdayCari);
     } catch (err) {
         if (err.name === "ValidationError") {
-            const errors = Object.keys(err.errors).map(key => ({
+            const errors = Object.keys(err.errors).map((key) => ({
                 field: key,
-                message: err.errors[key].message
+                message: err.errors[key].message,
             }));
-            return next(createError(400, "Geçersiz veri girişi!", errors));
+            return next(ApiError.badRequest("Geçersiz veri girişi!", errors));
         }
         if (err.code === 11000) {
-            return next(createError(400, "Bu aday kodu zaten mevcut!"));
+            return next(ApiError.badRequest("Bu aday kodu zaten mevcut!"));
         }
-        next(createError(500, "Aday cari güncellenemedi!", { error: err.message }));
+        next(err instanceof ApiError ? err : ApiError.internal(err.message || "Aday cari güncellenemedi!", { error: err.message }));
     }
 };
 
@@ -108,10 +254,10 @@ export const deleteAdayCari = async (req, res, next) => {
     try {
         const deletedAdayCari = await AdayCari.findByIdAndDelete(req.params.id);
         if (!deletedAdayCari) {
-            return next(createError(404, "Silinecek aday cari bulunamadı!"));
+            throw ApiError.notFound("Silinecek aday cari bulunamadı!");
         }
         res.status(200).json({ message: "Aday cari başarıyla silindi" });
     } catch (err) {
-        next(createError(500, "Aday cari silinemedi!", { error: err.message }));
+        next(err instanceof ApiError ? err : ApiError.internal("Aday cari silinemedi!", { error: err.message }));
     }
 };
