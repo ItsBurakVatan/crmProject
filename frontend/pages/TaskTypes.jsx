@@ -6,6 +6,7 @@ import "../styles/adayCariKartlari.css";
 const TaskTypes = () => {
     const [taskTypes, setTaskTypes] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null); // Hata state'i eklendi
     const [searchQuery, setSearchQuery] = useState("");
     const [showPopup, setShowPopup] = useState(false);
     const [newTaskType, setNewTaskType] = useState("");
@@ -13,18 +14,21 @@ const TaskTypes = () => {
     const [contextMenu, setContextMenu] = useState(null);
 
     useEffect(() => {
-        const fetchTaskTypes = async () => {
-            setLoading(true);
-            try {
-                const response = await axios.get("http://localhost:7700/api/taskTypes");
-                setTaskTypes(response.data);
-            } catch (error) {
-                console.error("Error fetching task types:", error);
-            }
-            setLoading(false);
-        };
         fetchTaskTypes();
     }, []);
+
+    const fetchTaskTypes = async () => {
+        setLoading(true);
+        try {
+            const response = await axios.get("http://localhost:7700/api/taskTypes");
+            setTaskTypes(response.data);
+            setError(null); // Başarılıysa hata sıfırlanır
+        } catch (error) {
+            setError(error.response?.data?.message || "Görev türleri alınamadı, lütfen tekrar deneyin.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleSearch = async (e) => {
         setSearchQuery(e.target.value);
@@ -32,36 +36,44 @@ const TaskTypes = () => {
             try {
                 const response = await axios.get(`http://localhost:7700/api/taskTypes/search?query=${e.target.value}`);
                 setTaskTypes(response.data);
+                setError(null);
             } catch (error) {
-                console.error("Error searching task types:", error);
+                setError(error.response?.data?.message || "Arama sırasında hata oluştu.");
             }
         } else {
-            const response = await axios.get("http://localhost:7700/api/taskTypes");
-            setTaskTypes(response.data);
+            fetchTaskTypes();
         }
     };
 
     const handleAddTaskType = async () => {
-        if (!newTaskType) return;
+        if (!newTaskType) {
+            setError("Görev türü adı boş olamaz!");
+            return;
+        }
         try {
             const response = await axios.post("http://localhost:7700/api/taskTypes", { name: newTaskType });
             setTaskTypes([...taskTypes, response.data]);
             setNewTaskType("");
             setShowPopup(false);
+            setError(null);
         } catch (error) {
-            console.error("Error adding task type:", error);
+            setError(error.response?.data?.message || "Görev türü eklenemedi.");
         }
     };
 
     const handleEditTaskType = async () => {
-        if (!editTaskType || !editTaskType.name) return;
+        if (!editTaskType || !editTaskType.name) {
+            setError("Görev türü adı boş olamaz!");
+            return;
+        }
         try {
             const response = await axios.put(`http://localhost:7700/api/taskTypes/${editTaskType._id}`, { name: editTaskType.name });
             setTaskTypes(taskTypes.map(task => task._id === editTaskType._id ? response.data : task));
             setEditTaskType(null);
             setShowPopup(false);
+            setError(null);
         } catch (error) {
-            console.error("Error editing task type:", error);
+            setError(error.response?.data?.message || "Görev türü güncellenemedi.");
         }
     };
 
@@ -70,18 +82,15 @@ const TaskTypes = () => {
             await axios.delete(`http://localhost:7700/api/taskTypes/${id}`);
             setTaskTypes(taskTypes.filter(task => task._id !== id));
             setContextMenu(null);
+            setError(null);
         } catch (error) {
-            console.error("Error deleting task type:", error);
+            setError(error.response?.data?.message || "Görev türü silinemedi.");
         }
     };
 
     const handleContextMenu = (e, taskType) => {
         e.preventDefault();
-        setContextMenu({
-            x: e.pageX,
-            y: e.pageY,
-            taskType
-        });
+        setContextMenu({ x: e.pageX, y: e.pageY, taskType });
     };
 
     const closeContextMenu = () => setContextMenu(null);
@@ -105,6 +114,7 @@ const TaskTypes = () => {
                 </button>
             </div>
             <div className="aday-cari-container">
+                {error && <div className="error-message">{error}</div>} {/* Hata mesajı gösterimi */}
                 <div className="table-wrapper">
                     <table className="aday-cari-table">
                         <thead>
@@ -156,20 +166,11 @@ const TaskTypes = () => {
             )}
 
             {contextMenu && (
-                <div
-                    className="context-menu"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
-                >
-                    <div
-                        className="context-menu-item"
-                        onClick={() => { setEditTaskType(contextMenu.taskType); setShowPopup(true); setContextMenu(null); }}
-                    >
+                <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
+                    <div className="context-menu-item" onClick={() => { setEditTaskType(contextMenu.taskType); setShowPopup(true); setContextMenu(null); }}>
                         Düzenle
                     </div>
-                    <div
-                        className="context-menu-item delete"
-                        onClick={() => handleDeleteTaskType(contextMenu.taskType._id)}
-                    >
+                    <div className="context-menu-item delete" onClick={() => handleDeleteTaskType(contextMenu.taskType._id)}>
                         Sil
                     </div>
                 </div>
