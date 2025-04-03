@@ -8,4 +8,7 @@ const taskTypeSchema = new mongoose.Schema({
     },
 });
 
-export default mongoose.model("TaskType", taskTypeSchema, "taskTypes");
+// Model zaten tanımlıysa onu döndür, yoksa yeni bir tane oluştur
+const TaskType = mongoose.models.TaskType || mongoose.model("TaskType", taskTypeSchema, "taskTypes");
+
+export default TaskType;
