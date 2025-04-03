@@ -5,9 +5,6 @@ import definition from './openapi.json' with { type: "json" };
 const Oas = OasModule.default; // Oas’ın default export’unu aldık
 const APICore = APICoreModule.default; // APICore’un default export’unu aldık
 
-console.log('Oas:', Oas); // Yapıyı tekrar doğrulayalım
-console.log('APICore:', APICore);
-
 class SDK {
     constructor() {
         this.spec = Oas.init(definition); // Oas.init kullanıyoruz
