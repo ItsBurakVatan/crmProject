@@ -30,16 +30,20 @@ export const getAdayCaris = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const all = req.query.all === "true" && req.user.role === "admin";
+        const noPagination = req.query.noPagination === "true";
 
         let filter = {};
         let total;
 
-        if (req.params.companyId) {
+        if (!all && req.params.companyId) {
             filter.company = req.params.companyId;
             if (req.user.role === "staff") {
                 filter.sorumluPersonel = req.user.id;
             }
             total = await AdayCari.countDocuments(filter);
+        } else if (all) {
+            total = await AdayCari.countDocuments();
         } else {
             total = await AdayCari.countDocuments();
         }
@@ -52,64 +56,80 @@ export const getAdayCaris = async (req, res, next) => {
             .populate("sorumluPersonel")
             .populate("durumu")
             .populate("cariHesapGrubu")
-            .skip(skip)
-            .limit(limit);
+            .skip(noPagination ? 0 : skip)
+            .limit(noPagination ? 0 : limit);
 
-        let rotaCaris = null;
-        try {
-            rotaCaris = await getCariHesapList({
-                filter: "ALL",
-                company_id: "2",
-                user_id: "9",
-                branch_id: localAdayCaris
-                    .map((cari) => cari.sube?._id?.toString())
-                    .filter((id) => id !== undefined && id !== null),
-                limit: `${skip},${limit}`,
-            });
-        } catch (rotaErr) {
-            logger.error("Rota Cloud’dan veri alınamadı:", rotaErr.message);
-        }
+        let mergedCaris = [...localAdayCaris];
 
-        const mergedCaris = [...localAdayCaris];
-        if (rotaCaris?.result) {
-            for (const rotaCari of rotaCaris.result) {
-                const exists = await AdayCari.findOne({ chUnvani: rotaCari.account });
-                if (!exists) {
-                    const countryId = await findCountryIdByName(rotaCari.country);
-                    const cityId = await findCityIdByName(rotaCari.city, countryId);
-                    const townId = await findTownIdByName(rotaCari.state, cityId);
+        if (!all && req.params.companyId) {
+            try {
+                const rotaCaris = await getCariHesapList({
+                    filter: "ALL",
+                    company_id: "2",
+                    user_id: "9",
+                    branch_id: localAdayCaris
+                        .map((cari) => cari.sube?._id?.toString())
+                        .filter((id) => id !== undefined && id !== null),
+                    limit: noPagination ? "" : `${skip},${limit}`,
+                });
 
-                    const newCari = new AdayCari({
-                        adayKodu: rotaCari.code ? parseInt(rotaCari.code) : (await AdayCari.countDocuments()) + 1,
-                        chUnvani: rotaCari.account,
-                        adres: rotaCari.address,
-                        yetkiliAdiSoyadi: rotaCari.yetkililer?.[0]?.name,
-                        yetkiliGorevi: rotaCari.yetkililer?.[0]?.title,
-                        yetkiliTelefon: rotaCari.phone,
-                        yetkiliEmail: rotaCari.email,
-                        vergiDairesi: rotaCari.vdairesi,
-                        vergiNo: rotaCari.vkn,
-                        tcKimlikNo: rotaCari.tckn,
-                        aciklama: rotaCari.notes,
-                        company: req.params.companyId || req.user.company,
-                        sube: rotaCari.subeid?.[0],
-                        ulke: countryId,
-                        il: cityId,
-                        ilce: townId,
-                        synced: true,
-                    });
-                    await newCari.save();
-                    mergedCaris.push(newCari);
+                if (rotaCaris?.result) {
+                    for (const rotaCari of rotaCaris.result) {
+                        const exists = await AdayCari.findOne({ chUnvani: rotaCari.account });
+                        if (!exists) {
+                            const countryId = await findCountryIdByName(rotaCari.country);
+                            const cityId = await findCityIdByName(rotaCari.city, countryId);
+                            const townId = await findTownIdByName(rotaCari.state, cityId);
+
+                            const newCari = new AdayCari({
+                                adayKodu: rotaCari.code ? parseInt(rotaCari.code) : (await AdayCari.countDocuments()) + 1,
+                                chUnvani: rotaCari.account,
+                                adres: rotaCari.address,
+                                yetkiliAdiSoyadi: rotaCari.yetkililer?.[0]?.name,
+                                yetkiliGorevi: rotaCari.yetkililer?.[0]?.title,
+                                yetkiliTelefon: rotaCari.phone,
+                                yetkiliEmail: rotaCari.email,
+                                vergiDairesi: rotaCari.vdairesi,
+                                vergiNo: rotaCari.vkn,
+                                tcKimlikNo: rotaCari.tckn,
+                                aciklama: rotaCari.notes,
+                                company: req.params.companyId || req.user.company,
+                                sube: rotaCari.subeid?.[0],
+                                ulke: countryId,
+                                il: cityId,
+                                ilce: townId,
+                                synced: false,
+                            });
+                            await newCari.save();
+
+                            try {
+                                await addCariHesap({
+                                    account: newCari.chUnvani,
+                                    code: newCari.adayKodu.toString(),
+                                    firmaid: "2",
+                                    user_id: req.user.id,
+                                });
+                                await AdayCari.updateOne({ _id: newCari._id }, { $set: { synced: true } });
+                                logger.info("Rota Cloud’a cari eklendi ve synced işaretlendi:", newCari.adayKodu);
+                            } catch (syncError) {
+                                logger.error("Rota Cloud sync hatası:", syncError.message);
+                            }
+
+                            mergedCaris.push(newCari);
+                        }
+                    }
                 }
+            } catch (rotaErr) {
+                logger.error("Rota Cloud’dan veri alınamadı:", rotaErr.message);
             }
         }
 
         logger.info(`Aday cariler alındı: Toplam ${mergedCaris.length} kayıt, Sayfa: ${page}`);
         res.status(200).json({
-            data: mergedCaris.slice(skip, skip + limit),
+            data: noPagination ? mergedCaris : mergedCaris.slice(skip, skip + limit),
             total: mergedCaris.length,
-            page,
-            pages: Math.ceil(mergedCaris.length / limit),
+            page: noPagination ? 1 : page,
+            pages: noPagination ? 1 : Math.ceil(mergedCaris.length / limit),
         });
     } catch (err) {
         next(ApiError.internal(err.message || "Aday cariler alınamadı!", { error: err.message }));
