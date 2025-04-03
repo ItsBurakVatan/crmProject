@@ -18,7 +18,7 @@ const CreateTask = () => {
         completed: false,
     });
     const [errors, setErrors] = useState({});
-    const [generalError, setGeneralError] = useState(""); // Genel hata mesajı için
+    const [generalError, setGeneralError] = useState("");
     const [options, setOptions] = useState({
         adayCaris: [],
         receiptTypes: [],
@@ -27,42 +27,69 @@ const CreateTask = () => {
         users: [],
         groups: [],
     });
-    const [page, setPage] = useState(1); // Pagination için
-    const [totalPages, setTotalPages] = useState(1);
+    const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchOptions = async () => {
+            setIsLoading(true);
             try {
+                const user = JSON.parse(localStorage.getItem("user"));
+                console.log("User:", user);
+                if (!user?._id) throw new Error("Kullanıcı ID bulunamadı!");
+
+                const adayCariEndpoint = user.role === "admin" 
+                    ? `/adaycaris/${user._id}?all=true&noPagination=true` 
+                    : `/adaycaris/${user._id}?noPagination=true`;
+
+                console.log("Fetching from endpoint:", adayCariEndpoint);
+
                 const [adayCaris, receiptTypes, priorities, taskTypes, users, groups] = await Promise.all([
-                    api.get(`/adaycaris/${JSON.parse(localStorage.getItem("user"))?._id}?page=${page}&limit=10`),
-                    api.get(`/tasks/receiptTypes?page=${page}&limit=10`),
-                    api.get(`/tasks/priorities?page=${page}&limit=10`),
-                    api.get(`/tasks/taskTypes?page=${page}&limit=10`),
-                    api.get(`/tasks/users?page=${page}&limit=10`),
-                    api.get(`/tasks/groups?page=${page}&limit=10`),
+                    api.get(adayCariEndpoint),
+                    api.get(`/tasks/receiptTypes`),
+                    api.get(`/tasks/priorities`),
+                    api.get(`/tasks/taskTypes`),
+                    api.get(`/tasks/users`),
+                    api.get(`/tasks/groups`),
                 ]);
-                setOptions({
-                    adayCaris: adayCaris.data.data,
-                    receiptTypes: receiptTypes.data.data,
-                    priorities: priorities.data.data,
-                    taskTypes: taskTypes.data.data,
-                    users: users.data.data,
-                    groups: groups.data.data,
-                });
-                setTotalPages(adayCaris.data.pages || 1); // Örnek olarak adayCaris’in sayfalarını kullanıyoruz
+
+                console.log("Raw adayCaris response:", adayCaris);
+                console.log("Raw receiptTypes response:", receiptTypes);
+                console.log("Raw priorities response:", priorities);
+
+                const newOptions = {
+                    adayCaris: adayCaris.data.data || [],
+                    receiptTypes: receiptTypes.data || [],
+                    priorities: priorities.data || [],
+                    taskTypes: taskTypes.data || [],
+                    users: users.data || [],
+                    groups: groups.data || [],
+                };
+                console.log("Updated options:", newOptions);
+                setOptions(newOptions);
             } catch (error) {
+                console.error("Fetch error:", error.response?.data || error.message);
                 setErrors({ submit: error.response?.data?.message || "Seçenekler yüklenemedi!" });
+                setOptions({
+                    adayCaris: [],
+                    receiptTypes: [],
+                    priorities: [],
+                    taskTypes: [],
+                    users: [],
+                    groups: [],
+                });
+            } finally {
+                setIsLoading(false);
             }
         };
         fetchOptions();
-    }, [page]);
+    }, []); // Sayfalama yok, bağımlılık da yok
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setTask((prev) => ({ ...prev, [name]: value }));
-        setErrors((prev) => ({ ...prev, [name]: "" })); // Hata mesajını sıfırla
-        setGeneralError(""); // Genel hata mesajını sıfırla
+        setErrors((prev) => ({ ...prev, [name]: "" }));
+        setGeneralError("");
     };
 
     const validateForm = () => {
@@ -102,94 +129,93 @@ const CreateTask = () => {
             <Navbar />
             <div className="form-container">
                 <h2>Yeni Görev/Aktivite</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="input-group">
-                        <label>Aday Cari</label>
-                        <select name="adayCari" value={task.adayCari} onChange={handleChange}>
-                            <option value="">Seçiniz</option>
-                            {options.adayCaris.map((aday) => (
-                                <option key={aday._id} value={aday._id}>{aday.chUnvani}</option>
-                            ))}
-                        </select>
-                        {errors.adayCari && <span className="error">{errors.adayCari}</span>}
-                    </div>
-                    <div className="input-group">
-                        <label>Görev/Aktivite Tarihi</label>
-                        <input type="datetime-local" name="taskDate" value={task.taskDate} onChange={handleChange} />
-                        {errors.taskDate && <span className="error">{errors.taskDate}</span>}
-                    </div>
-                    <div className="input-group">
-                        <label>Görev/Aktivite Bitiş Tarihi</label>
-                        <input type="datetime-local" name="taskEndDate" value={task.taskEndDate} onChange={handleChange} />
-                        {errors.taskEndDate && <span className="error">{errors.taskEndDate}</span>}
-                    </div>
-                    <div className="input-group">
-                        <label>Fiş Türü</label>
-                        <select name="receiptType" value={task.receiptType} onChange={handleChange}>
-                            <option value="">Seçiniz</option>
-                            {options.receiptTypes.map((type) => (
-                                <option key={type._id} value={type._id}>{type.name}</option>
-                            ))}
-                        </select>
-                        {errors.receiptType && <span className="error">{errors.receiptType}</span>}
-                    </div>
-                    <div className="input-group">
-                        <label>Öncelik</label>
-                        <select name="priority" value={task.priority} onChange={handleChange}>
-                            <option value="">Seçiniz</option>
-                            {options.priorities.map((priority) => (
-                                <option key={priority._id} value={priority._id}>{priority.name}</option>
-                            ))}
-                        </select>
-                        {errors.priority && <span className="error">{errors.priority}</span>}
-                    </div>
-                    <div className="input-group">
-                        <label>Görev/Aktivite Türü</label>
-                        <select name="taskType" value={task.taskType} onChange={handleChange}>
-                            <option value="">Seçiniz</option>
-                            {options.taskTypes.map((type) => (
-                                <option key={type._id} value={type._id}>{type.name}</option>
-                            ))}
-                        </select>
-                        {errors.taskType && <span className="error">{errors.taskType}</span>}
-                    </div>
-                    <div className="input-group">
-                        <label>İlişkili Kullanıcı</label>
-                        <select name="relatedUser" value={task.relatedUser} onChange={handleChange}>
-                            <option value="">Seçiniz</option>
-                            {options.users.map((user) => (
-                                <option key={user._id} value={user._id}>{user.username}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="input-group">
-                        <label>İlişkili Kullanıcı Grubu</label>
-                        <select name="relatedGroup" value={task.relatedGroup} onChange={handleChange}>
-                            <option value="">Seçiniz</option>
-                            {options.groups.map((group) => (
-                                <option key={group._id} value={group._id}>{group.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="input-group">
-                        <label>Açıklama</label>
-                        <textarea name="description" value={task.description} onChange={handleChange}></textarea>
-                        {errors.description && <span className="error">{errors.description}</span>}
-                    </div>
-                    <div className="pagination">
-                        <button onClick={() => setPage(page - 1)} disabled={page === 1}>Önceki</button>
-                        <span>Sayfa {page} / {totalPages}</span>
-                        <button onClick={() => setPage(page + 1)} disabled={page === totalPages}>Sonraki</button>
-                    </div>
-                    {errors.submit && <div className="error-message">{errors.submit}</div>}
-                    <div className="button-group">
-                        <button type="submit" className="save-btn">Kaydet</button>
-                        <button type="button" className="cancel-btn" onClick={() => navigate("/tasks")}>
-                            İptal
-                        </button>
-                    </div>
-                    {generalError && <div className="general-error">{generalError}</div>}
-                </form>
+                {isLoading ? (
+                    <p>Yükleniyor...</p>
+                ) : (
+                    <form onSubmit={handleSubmit}>
+                        <div className="input-group">
+                            <label>Aday Cari</label>
+                            <select name="adayCari" value={task.adayCari} onChange={handleChange}>
+                                <option value="">Seçiniz</option>
+                                {options.adayCaris.map((aday) => (
+                                    <option key={aday._id} value={aday._id}>{aday.chUnvani}</option>
+                                ))}
+                            </select>
+                            {errors.adayCari && <span className="error">{errors.adayCari}</span>}
+                        </div>
+                        <div className="input-group">
+                            <label>Fiş Türü</label>
+                            <select name="receiptType" value={task.receiptType} onChange={handleChange}>
+                                <option value="">Seçiniz</option>
+                                {options.receiptTypes.map((type) => (
+                                    <option key={type._id} value={type._id}>{type.name}</option>
+                                ))}
+                            </select>
+                            {errors.receiptType && <span className="error">{errors.receiptType}</span>}
+                        </div>
+                        <div className="input-group">
+                            <label>Öncelik</label>
+                            <select name="priority" value={task.priority} onChange={handleChange}>
+                                <option value="">Seçiniz</option>
+                                {options.priorities.map((priority) => (
+                                    <option key={priority._id} value={priority._id}>{priority.name}</option>
+                                ))}
+                            </select>
+                            {errors.priority && <span className="error">{errors.priority}</span>}
+                        </div>
+                        <div className="input-group">
+                            <label>Görev/Aktivite Türü</label>
+                            <select name="taskType" value={task.taskType} onChange={handleChange}>
+                                <option value="">Seçiniz</option>
+                                {options.taskTypes.map((type) => (
+                                    <option key={type._id} value={type._id}>{type.name}</option>
+                                ))}
+                            </select>
+                            {errors.taskType && <span className="error">{errors.taskType}</span>}
+                        </div>
+                        <div className="input-group">
+                            <label>İlişkili Kullanıcı</label>
+                            <select name="relatedUser" value={task.relatedUser} onChange={handleChange}>
+                                <option value="">Seçiniz</option>
+                                {options.users.map((user) => (
+                                    <option key={user._id} value={user._id}>{user.username}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="input-group">
+                            <label>İlişkili Kullanıcı Grubu</label>
+                            <select name="relatedGroup" value={task.relatedGroup} onChange={handleChange}>
+                                <option value="">Seçiniz</option>
+                                {options.groups.map((group) => (
+                                    <option key={group._id} value={group._id}>{group.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="input-group">
+                            <label>Görev/Aktivite Tarihi</label>
+                            <input type="datetime-local" name="taskDate" value={task.taskDate} onChange={handleChange} />
+                            {errors.taskDate && <span className="error">{errors.taskDate}</span>}
+                        </div>
+                        <div className="input-group">
+                            <label>Görev/Aktivite Bitiş Tarihi</label>
+                            <input type="datetime-local" name="taskEndDate" value={task.taskEndDate} onChange={handleChange} />
+                            {errors.taskEndDate && <span className="error">{errors.taskEndDate}</span>}
+                        </div>
+                        <div className="input-group">
+                            <label>Açıklama</label>
+                            <textarea name="description" value={task.description} onChange={handleChange}></textarea>
+                            {errors.description && <span className="error">{errors.description}</span>}
+                        </div>
+                        {errors.submit && <div className="error-message">{errors.submit}</div>}
+                        <div className="button-group">
+                            <button type="submit" className="save-btn">Kaydet</button>
+                            <button type="button" className="cancel-btn" onClick={() => navigate("/tasks")}>
+                                İptal
+                            </button>
+                        </div>
+                        {generalError && <div className="general-error">{generalError}</div>}
+                    </form>
+                )}
             </div>
         </div>
     );
