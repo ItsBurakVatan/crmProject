@@ -17,14 +17,11 @@ const UserManagement = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState("");
 
-    const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(
-        `/users?page=${page}&limit=10${searchQuery ? `&search=${searchQuery}` : ""}${roleFilter ? `&role=${roleFilter}` : ""}`
-    );
+    const fetchUrl = `/users?page=${page}&limit=10${searchQuery ? `&search=${searchQuery}` : ""}${roleFilter ? `&role=${roleFilter}` : ""}`;
+    const { data, loading: fetchLoading, error: fetchError, reFetch, fetch } = useFetch(fetchUrl, { debounceTime: 500, autoFetch: true });
 
     useEffect(() => {
-        console.log("Fetch URL:", `/users?page=${page}&limit=10${searchQuery ? `&search=${searchQuery}` : ""}${roleFilter ? `&role=${roleFilter}` : ""}`);
         if (data) {
-            console.log("Backend'den gelen veri:", data); // Dönen veriyi logla
             setUsers(data.data || []);
             setTotalPages(data.pages || 1);
             setLoading(fetchLoading);
@@ -33,6 +30,10 @@ const UserManagement = () => {
             setError("Kullanıcılar yüklenemedi: " + (fetchError.message || "Yetkisiz erişim!"));
         }
     }, [data, fetchLoading, fetchError]);
+
+    const handleManualFetch = () => {
+        fetch(); // Manuel veri yenileme
+    };
 
     const handleRoleChange = async (id, newRole) => {
         try {
@@ -83,13 +84,6 @@ const UserManagement = () => {
         setContextMenu({ x: e.pageX, y: e.pageY, user });
     };
 
-    const handleRoleFilterChange = (e) => {
-        const newRole = e.target.value;
-        console.log("Yeni Rol Filtresi:", newRole); // State'in güncellendiğini kontrol et
-        setRoleFilter(newRole);
-        setPage(1); // Filtre değiştiğinde sayfayı 1'e sıfırla
-    };
-
     const closeContextMenu = () => setContextMenu(null);
 
     return (
@@ -107,16 +101,15 @@ const UserManagement = () => {
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="search-bar"
                             />
-                            <select
-                                value={roleFilter}
-                                onChange={handleRoleFilterChange} // Yeni fonksiyonu kullan
-                                className="role-filter"
-                            >
+                            <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="role-filter">
                                 <option value="">Tüm Roller</option>
                                 <option value="staff">Staff</option>
                                 <option value="manager">Manager</option>
                                 <option value="admin">Admin</option>
                             </select>
+                            <button className="refresh-btn" onClick={handleManualFetch}>
+                                Verileri Yenile
+                            </button>
                         </div>
                     </div>
                     {error && <div className="error-message">{error}</div>}
@@ -189,16 +182,10 @@ const UserManagement = () => {
 
                 {contextMenu && (
                     <div className="context-menu" style={{ top: contextMenu.y, left: contextMenu.x }}>
-                        <div
-                            className="context-menu-item"
-                            onClick={() => handleShowDetails(contextMenu.user._id)}
-                        >
+                        <div className="context-menu-item" onClick={() => handleShowDetails(contextMenu.user._id)}>
                             Detaylar
                         </div>
-                        <div
-                            className="context-menu-item delete"
-                            onClick={() => handleDeleteUser(contextMenu.user._id)}
-                        >
+                        <div className="context-menu-item delete" onClick={() => handleDeleteUser(contextMenu.user._id)}>
                             Sil
                         </div>
                     </div>
