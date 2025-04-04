@@ -8,115 +8,268 @@
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.status-page {
-    padding: 20px;
-    min-height: 100vh;
-    background-color: var(--background-light);
-    padding-top: 80px;
-}
-
-.status-container {
-    display: flex;
-    justify-content: space-around;
-    max-width: 1200px;
-    margin: 0 auto;
-    gap: 20px;
-}
-
-.status-panel {
-    background-color: var(--text-color);
-    color: #f7e017; /* Daha parlak sarı ile kontrast iyileştirildi */
-    border-radius: 10px;
-    padding: 15px 20px;
-    width: 30%;
-    text-align: center;
-    box-shadow: var(--shadow);
-    transition: transform 0.3s, box-shadow 0.3s;
+.aday-cari-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 90%;
+    margin: 80px auto 20px;
 }
 
-.status-panel:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+.search-bar {
+    padding: 10px;
+    width: 300px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
 }
 
-.status-panel:focus {
+.search-bar:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
+}
+
+.add-aday-cari-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.add-aday-cari-btn:hover {
+    background-color: var(--primary-hover);
+}
+
+.add-aday-cari-btn:focus {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
 }
 
-.status-panel h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
+.aday-cari-container {
+    width: 90%;
+    margin: 0 auto;
 }
 
-.count {
-    display: inline-block;
+.table-wrapper {
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+.table-wrapper::-webkit-scrollbar {
+    height: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.aday-cari-table {
+    width: 100%;
+    min-width: 1200px;
+    border-collapse: collapse;
+    background-color: #fff;
+    box-shadow: var(--shadow);
+    border-radius: 8px;
+    table-layout: auto;
+}
+
+.aday-cari-table th,
+.aday-cari-table td {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+    white-space: nowrap;
+    font-size: 14px;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aday-cari-table th {
     background-color: #ecf0f1;
+    font-weight: 600;
     color: var(--text-color);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    line-height: 30px;
-    font-size: 16px;
-    font-weight: bold;
 }
 
-.loading {
-    text-align: center;
-    font-size: 18px;
-    color: var(--text-color);
-    padding: 20px;
+.aday-cari-table tr:hover {
+    background-color: #f5f6fa;
 }
 
-.error {
-    text-align: center;
-    font-size: 18px;
-    color: var(--danger-color);
-    padding: 20px;
-}
-
-.popup {
+/* Pop-up Overlay */
+.popup-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1000;
 }
 
-.popup-content {
-    background: white;
-    padding: 20px;
-    border-radius: 5px;
+/* Pop-up Container */
+.popup-modern {
+    background: #fff;
+    padding: 20px 30px;
+    border-radius: 12px;
     box-shadow: var(--shadow);
-    width: 300px;
+    width: 350px;
+    max-width: 90%;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Başlık */
+.popup-title {
+    margin: 0 0 20px;
+    font-size: 1.5rem;
+    color: #333;
     text-align: center;
 }
 
-.popup-content input {
+/* Input Alanı */
+.popup-input {
     width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
+    padding: 10px 15px;
+    margin-bottom: 20px;
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #333;
+    outline: none;
+    transition: border-color 0.3s ease;
 }
 
-.popup-content input:focus {
+.popup-input:focus {
+    border-color: var(--primary-color);
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
-    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
 }
 
-.popup-content button {
-    margin: 0 10px;
-    padding: 5px 15px;
+/* Buton Container */
+.popup-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+/* Genel Buton Stili */
+.popup-btn {
+    flex: 1;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Kaydet Butonu */
+.popup-btn-save {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+
+.popup-btn-save:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+.popup-btn-save:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* İptal Butonu */
+.popup-btn-cancel {
+    background-color: var(--danger-color);
+    color: #fff;
+}
+
+.popup-btn-cancel:hover {
+    background-color: var(--danger-hover);
+    transform: translateY(-2px);
+}
+
+.popup-btn-cancel:focus {
+    outline: 2px solid var(--danger-color);
+    outline-offset: 2px;
+}
+
+/* Animasyon */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Bağlam Menüsü */
+.context-menu {
+    position: absolute;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 5px 0;
+    width: 150px;
+    z-index: 1001;
+}
+
+.context-menu-item {
+    padding: 8px 15px;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.context-menu-item:hover {
+    background-color: #f0f0f0;
+}
+
+.context-menu-item.delete {
+    color: var(--danger-color);
+}
+
+.context-menu-item.delete:hover {
+    background-color: #ffe6e6;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.pagination button {
+    padding: 8px 16px;
     background-color: var(--primary-color);
     color: white;
     border: none;
@@ -124,58 +277,141 @@
     cursor: pointer;
 }
 
-.popup-content button:hover {
+.pagination button:hover {
     background-color: var(--primary-hover);
 }
 
-.popup-content button:focus {
+.pagination button:focus {
     outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Hata Mesajı */
+.error-message {
+    color: var(--danger-color);
+    font-size: 14px;
+    margin-top: 5px;
+    text-align: center;
+}
+
+.context-menu-item.disabled {
+    color: #999; /* Gri renk */
+    cursor: not-allowed; /* Tıklanamaz imleç */
+    pointer-events: none; /* Tıklama olaylarını devre dışı bırak */
+    opacity: 0.6; /* Hafif soluk görünüm */
+}
+
+.context-menu-item.disabled:hover {
+    background-color: transparent; /* Hover efektini kaldır */
+}
+
+.refresh-btn {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 10px;
+    transition: background-color 0.3s;
+}
+
+.refresh-btn:hover {
+    background-color: #2980b9;
+}
+
+.refresh-btn:focus {
+    outline: 2px solid #3498db;
     outline-offset: 2px;
 }
 
 /* Mobil Uyumluluk */
 @media (max-width: 768px) {
-    .status-page {
-        padding: 10px;
-        padding-top: 60px;
-    }
-
-    .status-container {
+    .aday-cari-header {
         flex-direction: column;
+        gap: 10px;
         width: 95%;
-        gap: 15px;
+        margin: 60px auto 10px;
     }
 
-    .status-panel {
+    .search-bar {
         width: 100%;
-        padding: 10px 15px;
-        margin-bottom: 10px;
     }
 
-    .status-panel h3 {
-        font-size: 16px;
+    .add-aday-cari-btn {
+        width: 100%;
+        padding: 12px;
     }
 
-    .count {
-        width: 25px;
-        height: 25px;
-        line-height: 25px;
-        font-size: 14px;
+    .aday-cari-container {
+        width: 95%;
     }
 
-    .loading,
-    .error {
-        font-size: 16px;
-        padding: 15px;
+    .table-wrapper {
+        overflow-x: auto;
     }
 
-    .popup-content {
+    .aday-cari-table {
+        display: block;
+        min-width: unset;
+        width: 100%;
+    }
+
+    .aday-cari-table thead,
+    .aday-cari-table tbody,
+    .aday-cari-table tr,
+    .aday-cari-table th,
+    .aday-cari-table td {
+        display: block;
+    }
+
+    .aday-cari-table th {
+        display: none;
+    }
+
+    .aday-cari-table td {
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+        border: none;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .aday-cari-table td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 10px;
+        font-weight: bold;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .popup-modern {
         width: 90%;
         padding: 15px;
     }
 
-    .popup-content button {
+    .popup-buttons {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .context-menu {
+        width: 120px;
+    }
+
+    .pagination {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .pagination button {
         width: 100%;
-        margin: 5px 0;
     }
 }
