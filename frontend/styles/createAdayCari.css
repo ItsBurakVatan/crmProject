@@ -8,6 +8,12 @@
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.create-aday-cari {
+    background-color: var(--background-light);
+    min-height: 100vh;
+    padding: 20px;
+}
+
 .create-aday-cari-container {
     background-color: var(--background-light);
     min-height: 100vh;
@@ -65,9 +71,49 @@
     resize: vertical;
 }
 
-/* Zip input’u için özel stil (gerekirse farklı bir genişlik veya hizalama yapılabilir) */
+/* Telefon input alanı için stil */
+.input-group .telefon-input {
+    display: flex;
+    gap: 10px;
+}
+
+.input-group .telefon-input select {
+    width: 120px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+    background-size: 16px;
+    appearance: none;
+}
+
+.input-group .telefon-input select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 5px rgba(39, 174, 96, 0.3);
+}
+
+.input-group .telefon-input input {
+    flex: 1;
+}
+
+/* Select dropdown’lar için ok simgesi ve stil */
+.input-group select {
+    appearance: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+    background-size: 16px;
+}
+
+.input-group select:disabled {
+    background-color: #f0f0f0;
+    cursor: not-allowed;
+}
+
+/* Zip input’u için özel stil */
 .input-group input#zip {
-    width: 100%; /* Diğer input’larla aynı genişlik */
+    width: 100%;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -213,6 +259,10 @@
 
 /* Mobil Uyumluluk */
 @media (max-width: 768px) {
+    .create-aday-cari {
+        padding: 10px;
+    }
+
     .create-aday-cari-container {
         padding-top: 60px;
     }
@@ -245,6 +295,19 @@
 
     .input-group textarea {
         height: 80px;
+    }
+
+    .input-group .telefon-input {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .input-group .telefon-input select {
+        width: 100%;
+    }
+
+    .input-group .telefon-input input {
+        width: 100%;
     }
 
     .button-group {
