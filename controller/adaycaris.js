@@ -3,26 +3,64 @@ import AdayCari from "../models/AdayCari.js";
 import Country from "../models/countries.js";
 import City from "../models/cities.js";
 import Town from "../models/Town.js";
-import { ApiError } from "../error.js"; // Yeni ApiError import edildi
+import { ApiError } from "../error.js";
 import { getCariHesapList, addCariHesap } from "../services/rotaCloudService.js";
-import logger from "../utils/logger.js"; // Logger eklendi
+import logger from "../utils/logger.js";
 
 const findCountryIdByName = async (name) => {
-    if (!name) return null;
-    const country = await Country.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") } });
-    return country?._id || null;
+    if (!name) {
+        logger.warn("Ülke adı boş, varsayılan değer kullanılacak.");
+        const defaultCountry = await Country.findOne({ name: "Türkiye" });
+        return defaultCountry ? defaultCountry._id : null;
+    }
+
+    // Rota Cloud’dan gelen ülke kodlarını eşleştirme
+    const countryMapping = {
+        "TR": "Türkiye",
+        "GE": "Gürcistan",
+        // Diğer ülke kodlarını buraya ekleyebilirsiniz
+    };
+
+    const mappedName = countryMapping[name] || name;
+    const country = await Country.findOne({ name: { $regex: new RegExp(`^${mappedName}$`, "i") } });
+    if (!country) {
+        logger.warn(`Ülke bulunamadı: ${name}, varsayılan değer kullanılacak.`);
+        const defaultCountry = await Country.findOne({ name: "Türkiye" });
+        return defaultCountry ? defaultCountry._id : null;
+    }
+    return country._id; // ObjectId döndür
 };
 
 const findCityIdByName = async (name, countryId) => {
-    if (!name || !countryId) return null;
+    if (!name) {
+        logger.warn("Şehir adı boş, varsayılan değer kullanılacak.");
+        return "";
+    }
+    if (!countryId) {
+        logger.warn("Ülke ID'si bulunamadı, şehir aranamayacak.");
+        return name;
+    }
     const city = await City.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") }, country: countryId });
-    return city?._id || null;
+    if (!city) {
+        logger.warn(`Şehir bulunamadı: ${name}, ülke: ${countryId}`);
+    }
+    return city?.name || name;
 };
 
 const findTownIdByName = async (name, cityId) => {
-    if (!name || !cityId) return null;
+    if (!name) {
+        logger.warn("İlçe adı boş, varsayılan değer kullanılacak.");
+        return "";
+    }
+    if (!cityId) {
+        logger.warn("Şehir ID'si bulunamadı, ilçe aranamayacak.");
+        return name;
+    }
     const town = await Town.findOne({ name: { $regex: new RegExp(`^${name}$`, "i") }, city: cityId });
-    return town?._id || null;
+    if (!town) {
+        logger.warn(`İlçe bulunamadı: ${name}, şehir: ${cityId}`);
+    }
+    return town?.name || name;
 };
 
 export const getAdayCaris = async (req, res, next) => {
@@ -36,71 +74,118 @@ export const getAdayCaris = async (req, res, next) => {
         let filter = {};
         let total;
 
-        if (!all && req.params.companyId) {
-            filter.company = req.params.companyId;
+        if (!all) {
+            filter.company = "2";
             if (req.user.role === "staff") {
                 filter.sorumluPersonel = req.user.id;
             }
+            logger.info("Filtreleme uygulandı:", filter);
             total = await AdayCari.countDocuments(filter);
-        } else if (all) {
-            total = await AdayCari.countDocuments();
+            logger.info(`Filtrelenmiş toplam kayıt: ${total}`);
         } else {
             total = await AdayCari.countDocuments();
+            logger.info(`Tüm kayıtlar için toplam: ${total}`);
         }
 
         const localAdayCaris = await AdayCari.find(filter)
-            .populate("ulke")
-            .populate("il")
-            .populate("ilce")
-            .populate("sube")
             .populate("sorumluPersonel")
             .populate("durumu")
             .populate("cariHesapGrubu")
             .skip(noPagination ? 0 : skip)
             .limit(noPagination ? 0 : limit);
 
+        logger.info(`Yerel veritabanından çekilen kayıtlar: ${localAdayCaris.length}`);
+
         let mergedCaris = [...localAdayCaris];
 
-        if (!all && req.params.companyId) {
+        if (!all) {
             try {
+                const BRANCH_ID = JSON.parse(process.env.BRANCH_ID); // ["1"]
+
                 const rotaCaris = await getCariHesapList({
                     filter: "ALL",
                     company_id: "2",
                     user_id: "9",
-                    branch_id: localAdayCaris
-                        .map((cari) => cari.sube?._id?.toString())
-                        .filter((id) => id !== undefined && id !== null),
+                    branch_id: BRANCH_ID,
                     limit: noPagination ? "" : `${skip},${limit}`,
                 });
 
-                if (rotaCaris?.result) {
+                logger.info(`Rota Cloud’dan gelen ham veri: ${JSON.stringify(rotaCaris, null, 2)}`);
+
+                if (rotaCaris?.result && rotaCaris.result.length > 0) {
                     for (const rotaCari of rotaCaris.result) {
-                        const exists = await AdayCari.findOne({ chUnvani: rotaCari.account });
-                        if (!exists) {
-                            const countryId = await findCountryIdByName(rotaCari.country);
+                        try {
+                            logger.info(`İşlenen Rota Cari: ${JSON.stringify(rotaCari, null, 2)}`);
+
+                            const exists = await AdayCari.findOne({ chUnvani: rotaCari.account });
+                            const countryId = await findCountryIdByName(rotaCari.country || "TR"); // ObjectId
+                            const countryName = countryId ? (await Country.findById(countryId))?.name || "Türkiye" : "Türkiye"; // Ülke adını string olarak al
                             const cityId = await findCityIdByName(rotaCari.city, countryId);
                             const townId = await findTownIdByName(rotaCari.state, cityId);
 
+                            // Telefon bilgisini adresler dizisinden almayı dene
+                            let phoneFromAdresler = "";
+                            if (rotaCari.adresler && rotaCari.adresler.length > 0) {
+                                phoneFromAdresler = rotaCari.adresler[0]?.telefon || "";
+                            }
+
+                            if (exists) {
+                                // Mevcut kaydı güncelle
+                                await AdayCari.updateOne(
+                                    { _id: exists._id },
+                                    {
+                                        $set: {
+                                            adres: rotaCari.address || exists.adres || "",
+                                            yetkiliAdiSoyadi: rotaCari.yetkililer?.[0]?.name || exists.yetkiliAdiSoyadi || "",
+                                            yetkiliGorevi: rotaCari.yetkililer?.[0]?.title || exists.yetkiliGorevi || "",
+                                            yetkiliTelefon: phoneFromAdresler || rotaCari.phone || rotaCari.gsmno || exists.yetkiliTelefon || "",
+                                            yetkiliEmail: rotaCari.email || exists.yetkiliEmail || "",
+                                            vergiDairesi: rotaCari.vdairesi || exists.vergiDairesi || "",
+                                            vergiNo: rotaCari.vkn || exists.vergiNo || "",
+                                            tcKimlikNo: rotaCari.tckn || exists.tcKimlikNo || "",
+                                            aciklama: rotaCari.notes || exists.aciklama || "",
+                                            sube: rotaCari.subeid?.[0]?.subeid || exists.sube || "",
+                                            ulke: countryName || exists.ulke || "Türkiye", // String olarak kaydet
+                                            il: cityId || exists.il || "",
+                                            ilce: townId || exists.ilce || "",
+                                            city: rotaCari.city || exists.city || "",
+                                            zip: rotaCari.zip || exists.zip || "",
+                                            synced: false,
+                                        },
+                                    }
+                                );
+                                logger.info(`Mevcut cari güncellendi: ${exists._id}`);
+                                continue;
+                            }
+
                             const newCari = new AdayCari({
                                 adayKodu: rotaCari.code ? parseInt(rotaCari.code) : (await AdayCari.countDocuments()) + 1,
-                                chUnvani: rotaCari.account,
-                                adres: rotaCari.address,
-                                yetkiliAdiSoyadi: rotaCari.yetkililer?.[0]?.name,
-                                yetkiliGorevi: rotaCari.yetkililer?.[0]?.title,
-                                yetkiliTelefon: rotaCari.phone,
-                                yetkiliEmail: rotaCari.email,
-                                vergiDairesi: rotaCari.vdairesi,
-                                vergiNo: rotaCari.vkn,
-                                tcKimlikNo: rotaCari.tckn,
-                                aciklama: rotaCari.notes,
-                                company: req.params.companyId || req.user.company,
-                                sube: rotaCari.subeid?.[0],
-                                ulke: countryId,
-                                il: cityId,
-                                ilce: townId,
+                                chUnvani: rotaCari.account || "Bilinmeyen Hesap",
+                                adres: rotaCari.address || "",
+                                yetkiliAdiSoyadi: rotaCari.yetkililer?.[0]?.name || "",
+                                yetkiliGorevi: rotaCari.yetkililer?.[0]?.title || "",
+                                yetkiliTelefon: phoneFromAdresler || rotaCari.phone || rotaCari.gsmno || "",
+                                yetkiliEmail: rotaCari.email || "",
+                                vergiDairesi: rotaCari.vdairesi || "",
+                                vergiNo: rotaCari.vkn || "",
+                                tcKimlikNo: rotaCari.tckn || "",
+                                aciklama: rotaCari.notes || "",
+                                company: "2",
+                                sube: rotaCari.subeid?.[0]?.subeid || "",
+                                ulke: countryName || "Türkiye", // String olarak kaydet
+                                il: cityId || "",
+                                ilce: townId || "",
+                                city: rotaCari.city || "",
+                                zip: rotaCari.zip || "",
                                 synced: false,
+                                sorumluPersonel: null,
+                                durumu: null,
+                                cariHesapGrubu: null,
+                                musteriHikayesi: "",
                             });
+
                             await newCari.save();
+                            logger.info(`Yeni cari kaydedildi: ${newCari._id}`);
 
                             try {
                                 await addCariHesap({
@@ -112,26 +197,32 @@ export const getAdayCaris = async (req, res, next) => {
                                 await AdayCari.updateOne({ _id: newCari._id }, { $set: { synced: true } });
                                 logger.info("Rota Cloud’a cari eklendi ve synced işaretlendi:", newCari.adayKodu);
                             } catch (syncError) {
-                                logger.error("Rota Cloud sync hatası:", syncError.message);
+                                logger.error(`Rota Cloud sync hatası (${rotaCari.account}): ${syncError.message}`);
                             }
 
                             mergedCaris.push(newCari);
+                        } catch (error) {
+                            logger.error(`Kayıt işlenirken hata (${rotaCari.account}): ${error.message}`);
+                            continue;
                         }
                     }
+                } else {
+                    logger.warn("Rota Cloud’dan veri alınamadı veya veri boş.");
                 }
             } catch (rotaErr) {
                 logger.error("Rota Cloud’dan veri alınamadı:", rotaErr.message);
             }
         }
 
-        logger.info(`Aday cariler alındı: Toplam ${mergedCaris.length} kayıt, Sayfa: ${page}`);
+        logger.info(`Toplam kayıt (mergedCaris): ${mergedCaris.length}, Sayfa: ${page}`);
         res.status(200).json({
-            data: noPagination ? mergedCaris : mergedCaris.slice(skip, skip + limit),
-            total: mergedCaris.length,
+            data: mergedCaris,
+            total: total,
             page: noPagination ? 1 : page,
-            pages: noPagination ? 1 : Math.ceil(mergedCaris.length / limit),
+            pages: noPagination ? 1 : Math.ceil(total / limit),
         });
     } catch (err) {
+        logger.error("getAdayCaris hatası:", err.message);
         next(ApiError.internal(err.message || "Aday cariler alınamadı!", { error: err.message }));
     }
 };
@@ -149,12 +240,16 @@ export const createAdayCari = async (req, res) => {
 
         const newAdayCari = new AdayCari({
             ...adayCariData,
-            company: adayCariData.company || "67d95e0e5b7d53eb87c05938",
+            company: "2",
             synced: false,
         });
 
         const savedAdayCari = await newAdayCari.save({ session });
         logger.info("Yerel veritabanına kaydedildi:", savedAdayCari._id);
+
+        const countryName = savedAdayCari.ulke || "Türkiye"; // ulke zaten string
+        const cityName = savedAdayCari.il || "";
+        const stateName = savedAdayCari.ilce || "";
 
         const cariData = {
             user_id: "9",
@@ -162,12 +257,12 @@ export const createAdayCari = async (req, res) => {
             code: savedAdayCari.adayKodu?.toString(),
             phone: savedAdayCari.yetkiliTelefon || "",
             email: savedAdayCari.yetkiliEmail || "",
-            address: savedAdayCari.adres || "Varsayılan Adres",
-            city: "İzmir",
-            state: "Tire",
-            country: "Türkiye",
-            vdairesi: savedAdayCari.vergiDairesi || "Varsayılan Vergi Dairesi",
-            vkn: savedAdayCari.vergiNo || "1234567890",
+            address: savedAdayCari.adres || "",
+            city: cityName,
+            state: stateName,
+            country: countryName,
+            vdairesi: savedAdayCari.vergiDairesi || "",
+            vkn: savedAdayCari.vergiNo || "",
             tckn: savedAdayCari.tcKimlikNo || "",
             notes: savedAdayCari.aciklama || "",
             firmaid: "2",
@@ -177,7 +272,7 @@ export const createAdayCari = async (req, res) => {
                 : [],
         };
 
-        logger.info("Rota Cloud’a veri hazırlanır:", cariData.account);
+        logger.info("Rota Cloud’a veri hazırlanır:", cariData);
         const rotaResponse = await addCariHesap(cariData);
 
         if (rotaResponse.message !== "Chk was created." || !rotaResponse.result?.startsWith("2")) {
@@ -211,10 +306,6 @@ export const updateAdayCari = async (req, res, next) => {
             { $set: { ...req.body, synced: false } },
             { new: true }
         )
-            .populate("ulke")
-            .populate("il")
-            .populate("ilce")
-            .populate("sube")
             .populate("sorumluPersonel")
             .populate("durumu")
             .populate("cariHesapGrubu");
@@ -223,18 +314,22 @@ export const updateAdayCari = async (req, res, next) => {
             throw ApiError.notFound("Güncellenecek aday cari bulunamadı!");
         }
 
+        const countryName = updatedAdayCari.ulke || "Türkiye"; // ulke zaten string
+        const cityName = updatedAdayCari.il || "";
+        const stateName = updatedAdayCari.ilce || "";
+
         const cariData = {
             user_id: "9",
-            account: updatedAdayCari.chUnvani, // savedAdayCari yerine updatedAdayCari
+            account: updatedAdayCari.chUnvani,
             code: updatedAdayCari.adayKodu?.toString(),
             phone: updatedAdayCari.yetkiliTelefon || "",
             email: updatedAdayCari.yetkiliEmail || "",
-            address: updatedAdayCari.adres || "Varsayılan Adres",
-            city: updatedAdayCari.il?.name || "İzmir", // Populate edilmişse name kullanılır
-            state: updatedAdayCari.ilce?.name || "Tire",
-            country: updatedAdayCari.ulke?.name || "Türkiye",
-            vdairesi: updatedAdayCari.vergiDairesi || "Varsayılan Vergi Dairesi",
-            vkn: updatedAdayCari.vergiNo || "1234567890",
+            address: updatedAdayCari.adres || "",
+            city: cityName,
+            state: stateName,
+            country: countryName,
+            vdairesi: updatedAdayCari.vergiDairesi || "",
+            vkn: updatedAdayCari.vergiNo || "",
             tckn: updatedAdayCari.tcKimlikNo || "",
             notes: updatedAdayCari.aciklama || "",
             firmaid: "2",
@@ -245,9 +340,8 @@ export const updateAdayCari = async (req, res, next) => {
         };
 
         logger.info("Rota Cloud’a güncelleme verisi hazırlanır:", cariData.account);
-        const rotaResponse = await addCariHesap(cariData); // Not: Bu aslında bir güncelleme olmalı, add yerine update kullanılabilir
+        const rotaResponse = await addCariHesap(cariData);
 
-        // Rota Cloud yanıtını kontrol et
         if (rotaResponse.message !== "Chk was created." && !["201", "202", "204"].includes(rotaResponse.result)) {
             throw ApiError.internal(`Rota Cloud güncelleme başarısız: Beklenmeyen yanıt - ${JSON.stringify(rotaResponse)}`);
         }
