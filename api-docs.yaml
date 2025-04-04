@@ -1,0 +1,69 @@
+openapi: 3.0.0
+info:
+  title: CRM API
+  version: 1.0.0
+paths:
+  /api/adaycaris/{companyId}:
+    get:
+      summary: Şirkete ait aday carileri listele
+      parameters:
+        - in: path
+          name: companyId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Başarılı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/AdayCari' } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pages: { type: integer }
+  /api/tasks:
+    get:
+      summary: Görevleri listele
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
+      responses:
+        '200':
+          description: Başarılı
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: array, items: { $ref: '#/components/schemas/Task' } }
+                  total: { type: integer }
+                  page: { type: integer }
+                  pages: { type: integer }
+components:
+  schemas:
+    AdayCari:
+      type: object
+      properties:
+        _id: { type: string }
+        adayKodu: { type: integer }
+        chUnvani: { type: string }
+        synced: { type: boolean }
+    Task:
+      type: object
+      properties:
+        _id: { type: string }
+        taskNo: { type: integer }
+        description: { type: string }
+        createdBy: { type: string }
