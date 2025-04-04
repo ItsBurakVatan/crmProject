@@ -10,7 +10,7 @@ const Reports = ({ reportType }) => {
     const navigate = useNavigate();
 
     const reportEndpoints = {
-        "tasks": `/tasks/completion-report`, // userId kaldırıldı
+        "tasks": `/tasks/completion-report`,
         "users": `/users/${user?._id}/activity-report`,
         "customer-status": `/adaycaris/${user?._id}/status-report`,
     };
@@ -21,18 +21,27 @@ const Reports = ({ reportType }) => {
         "customer-status": "Müşteri Durum Özeti Raporu",
     };
 
-    const { data, loading, error } = useFetch(reportEndpoints[reportType]);
+    const { data, loading, error, reFetch, fetch } = useFetch(reportEndpoints[reportType], { debounceTime: 500, autoFetch: true });
 
     if (!user || user.role !== "admin") {
         navigate("/login");
         return null;
     }
 
+    const handleManualFetch = () => {
+        fetch(); // Manuel veri yenileme
+    };
+
     return (
         <div className="reports-container">
             <Navbar />
             <div className="reports-content">
-                <h2>{reportTitles[reportType]}</h2>
+                <div className="report-header">
+                    <h2>{reportTitles[reportType]}</h2>
+                    <button className="refresh-btn" onClick={handleManualFetch}>
+                        Verileri Yenile
+                    </button>
+                </div>
                 <div className="report-display">
                     {loading && <p>Yükleniyor...</p>}
                     {error && (
