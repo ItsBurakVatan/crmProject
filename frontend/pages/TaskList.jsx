@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "./Navbar";
 import api from "../api";
-import { useNavigate , useLocation} from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import useFetch from "../useFetch";
 import { AuthContext } from "../authContext";
 import "../styles/adayCariKartlari.css";
-import debounce from "lodash/debounce"; // lodash debounce eklendi
+import debounce from "lodash/debounce";
 
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
@@ -24,9 +24,9 @@ const TaskList = () => {
         taskTypes: [],
     });
     const navigate = useNavigate();
-    const location = useLocation(); 
+    const location = useLocation();
 
-    const { data, loading: fetchLoading, error: fetchError, reFetch } = useFetch(`/tasks?page=${page}&limit=10`);
+    const { data, loading: fetchLoading, error: fetchError, reFetch, fetch } = useFetch(`/tasks?page=${page}&limit=10`, { debounceTime: 500, autoFetch: true });
 
     useEffect(() => {
         if (data) {
@@ -79,17 +79,21 @@ const TaskList = () => {
         } else {
             reFetch();
         }
-    }, 300); // 300ms gecikme
+    }, 300);
 
     const handleSearch = (e) => {
         setSearchQuery(e.target.value);
         debouncedSearch(e.target.value);
     };
 
+    const handleManualFetch = () => {
+        fetch(); // Manuel veri yenileme
+    };
+
     const handleEditTask = async () => {
         if (user.role === "staff") {
             setError("Bu işlem için yetkiniz yok!");
-            setTimeout(() => setError(null), 3000); // 3 saniye sonra mesajı kaldır
+            setTimeout(() => setError(null), 3000);
             return;
         }
         if (!editTask) return;
@@ -101,19 +105,13 @@ const TaskList = () => {
                 priority: editTask.priority?._id || undefined,
                 taskType: editTask.taskType?._id || undefined
             };
-        
-            if (taskToUpdate.description && taskToUpdate.description.length < 3) {
-                throw new Error("Açıklama en az 3 karakter olmalı!");
-            }
-        
-            console.log("Sending update data:", taskToUpdate);
             const response = await api.put(`/tasks/${editTask._id}`, taskToUpdate);
             setTasks(tasks.map(task => task._id === editTask._id ? response.data : task));
             setEditTask(null);
             setShowPopup(false);
             setError(null);
         } catch (error) {
-            setError(error.response?.data?.message || error.message || "Görev düzenlenemedi.");
+            setError(error.response?.data?.message || "Görev düzenlenemedi.");
         }
     };
 
@@ -146,9 +144,14 @@ const TaskList = () => {
                     onChange={handleSearch}
                     className="search-bar"
                 />
-                <button className="add-aday-cari-btn" onClick={() => navigate("/create-task")}>
-                    + Görev/Akt. Ekle
-                </button>
+                <div>
+                    <button className="add-aday-cari-btn" onClick={() => navigate("/create-task")}>
+                        + Görev/Akt. Ekle
+                    </button>
+                    <button className="refresh-btn" onClick={handleManualFetch}>
+                        Verileri Yenile
+                    </button>
+                </div>
             </div>
             <div className="aday-cari-container">
                 {error && <div className="error-message">{error}</div>}
