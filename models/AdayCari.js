@@ -1,43 +1,48 @@
 import mongoose from "mongoose";
 
 const adayCariSchema = new mongoose.Schema({
-    sube: { type: String }, // Şube ID’sini string olarak sakla
-    adayKodu: { type: Number },
+    sube: { type: String, default: "" },
+    adayKodu: { 
+        type: Number,
+        required: [true, "Aday Kodu zorunlu!"],
+        unique: true
+    },
     chUnvani: { 
         type: String, 
         required: [true, "C/H Ünvanı zorunlu!"], 
-        minlength: [3, "C/H Ünvanı en az 3 karakter olmalı!"]
+        default: "Bilinmeyen Hesap"
     },
-    adres: { type: String },
-    ulke: { type: String }, // Ülke string olarak saklanacak
-    il: { type: String }, // İl string olarak saklanacak
-    ilce: { type: String }, // İlçe string olarak saklanacak
-    sorumluPersonel: { type: mongoose.Schema.Types.ObjectId, ref: "Staff" },
-    yetkiliAdiSoyadi: { 
-        type: String
-    },
-    yetkiliGorevi: { type: String },
+    adres: { type: String, default: "" },
+    ulke: { type: String, default: "Türkiye" },
+    il: { type: String, default: "" },
+    ilce: { type: String, default: "" },
+    sorumluPersonel: { type: mongoose.Schema.Types.ObjectId, ref: "Staff", default: null },
+    yetkiliAdiSoyadi: { type: String, default: "" },
+    yetkiliGorevi: { type: String, default: "" },
     yetkiliEmail: { 
         type: String,
-        match: [/^\S+@\S+\.\S+$/, "Geçerli bir email adresi girin!"]
+        default: ""
     },
-    yetkiliTelefon: { type: String },
-    vergiDairesi: { type: String },
+    yetkiliTelefon: { type: String, default: "" },
+    vergiDairesi: { type: String, default: "" },
     vergiNo: { 
         type: String, 
-        match: [/^\d{8,15}$/, "Vergi numarası 8-15 haneli olmalı!"]
+        default: ""
     },
     tcKimlikNo: { 
         type: String, 
-        match: [/^\d{11}$/, "TC Kimlik No 11 haneli olmalı!"]
+        default: ""
     },
-    aciklama: { type: String },
-    durumu: { type: mongoose.Schema.Types.ObjectId, ref: "Status" },
-    cariHesapGrubu: { type: mongoose.Schema.Types.ObjectId, ref: "Group" },
-    musteriHikayesi: { type: String },
+    aciklama: { type: String, default: "" },
+    durumu: { type: mongoose.Schema.Types.ObjectId, ref: "Status", default: null },
+    cariHesapGrubu: { type: mongoose.Schema.Types.ObjectId, ref: "Group", default: null },
+    musteriHikayesi: { type: String, default: "" },
+    city: { type: String, default: "" },
+    zip: { type: String, default: "" },
     company: { 
         type: String,
-        required: [true, "Şirket ID zorunlu!"]
+        required: [true, "Şirket ID zorunlu!"],
+        default: "2"
     },
     synced: { type: Boolean, default: false }
 }, { timestamps: true });
