@@ -1,5 +1,5 @@
 
-🧩 CRM Backend – Node.js + MongoDB Based
+🧩 CRM – Node.js + MongoDB Based
 
 
 ---
@@ -87,7 +87,7 @@ crm/
 
 
 
-git clone https://github.com/YourUsername/crm-backend.git
+git clone https://github.com/ItsBurakVatan/crmProject.git
 cd crm-backend
 
 2. Install dependencies:
@@ -102,8 +102,8 @@ npm install
 
 Create a .env file:
 
-PORT=7700
-MONGO=mongodb://localhost:27017/crm
+PORT=your-port
+MONGO=your-url
 ROTA_USERNAME=your-username
 ROTA_PASSWORD=your-password
 
